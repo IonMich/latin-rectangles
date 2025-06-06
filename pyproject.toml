@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = []
 
 [project.scripts]
-latin-rectangles = "latin_rectangles:main"
+latin-rectangles = "latin_rectangles.__main__:main"
 
 [build-system]
 requires = ["hatchling"]
