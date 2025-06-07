@@ -1,7 +1,7 @@
 [project]
 name = "latin-rectangles"
 version = "0.1.0"
-description = "Add your description here"
+description = "Count the number of one-row extensions of Latin rectangles."
 readme = "README.md"
 authors = [
     { name = "Ioannis Michaloliakos", email = "ioannis.michalol@ufl.edu" }

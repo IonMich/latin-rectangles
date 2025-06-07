@@ -7,12 +7,12 @@ A high-performance Python library for counting the number of ways to extend a 2�
 
 ## Overview
 
-This library provides efficient algorithms for computing Latin rectangle extensions, a fundamental problem in combinatorics. Given the first two rows of a Latin rectangle (where the first row is the identity permutation and the second row is a derangement), the library calculates how many valid third rows exist.
+This library provides an efficient algorithm for computing Latin rectangle extensions, a fundamental problem in combinatorics. Given the first two rows of a Latin rectangle (where the first row is the identity permutation and the second row is a derangement), the library calculates how many valid third rows exist.
 
 ### Key Features
 
 - **High Performance**: Approximate O(n^2) time complexity, tested up to n=800
-- **Memory Efficient**: Approximate O(n^1.36) memory complexity 
+- **Memory Efficient**: Approximate O(n^1.36) memory complexity
 - **Mathematically Rigorous**: Based on rook polynomial theory and cycle decomposition
 - **Easy to Use**: Simple command-line interface and Python API
 - **Well Tested**: Comprehensive test suite with complexity analysis
@@ -228,17 +228,9 @@ A **Latin rectangle** is an r×n array filled with n different symbols such that
 Given a 2×n Latin rectangle:
 ```
 1  2  3  4  5  6  7  8
-2  3  4  5  6  7  8  1
+p[1]  p[2]  p[3]  p[4]  p[5]  p[6]  p[7]  p[8]
 ```
-
-How many ways can we add a third row to maintain the Latin rectangle property?
-
-## Performance Tips
-
-1. **For batch processing**: Use `count_random_extensions()` for simplicity
-2. **For custom derangements**: Generate once, reuse with `count_extensions()`  
-3. **For large n**: The algorithm remains efficient up to n=800+
-4. **Memory considerations**: Peak memory usage is < 1MB even for large inputs
+where `p` is a derangement, the problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle.
 
 ## Contributing
 
@@ -263,12 +255,6 @@ If you use this library in your research, please cite:
   title={Latin Rectangles Extension Counter},
   author={Ioannis Michaloliakos},
   year={2025},
-  url={https://github.com/yourusername/latin-rectangles}
+  url={https://github.com/ionmich/latin-rectangles}
 }
 ```
-
----
-
-**Version**: 0.1.0  
-**Python**: 3.12+  
-**Performance**: Tested up to n=800
