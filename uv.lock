@@ -86,7 +86,7 @@ wheels = [
 
 [[package]]
 name = "latin-rectangles"
-version = "0.1.0"
+version = "0.1.1"
 source = { editable = "." }
 
 [package.dev-dependencies]
