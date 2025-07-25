@@ -30,6 +30,33 @@ where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the pro
 
 ## Installation
 
+### Via pip
+
+The library is available on PyPI and can be installed via pip:
+
+```console
+pip install latin-rectangles
+```
+
+### Via uv Package Manager (Recommended)
+
+Using the [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/), you can try out the package without a separate installation step:
+
+```console
+uvx latin-rectangles --n 42
+```
+
+If you want to add it to your project, you can use:
+
+```console
+# Add to your project's environment using uv
+uv add latin-rectangles
+```
+
+### Manual Installation
+
+*Alternatively*, you can clone the repository and install it manually:
+
 ```console
 git clone https://github.com/ionmich/latin-rectangles.git
 cd latin-rectangles
