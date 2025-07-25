@@ -1,13 +1,24 @@
 # Latin Rectangles Extension Counter
 
-A high-performance Python library for counting the number of ways to extend a 2×n Latin rectangle to a 3×n Latin rectangle using rook polynomial methods and cycle decomposition theory.
+A high-performance Python library for counting the number of ways to extend a 2×n [Latin rectangle](https://en.wikipedia.org/wiki/Latin_rectangle) to a 3×n Latin rectangle using rook polynomial methods and cycle decomposition theory.
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Overview
 
-This library provides an efficient algorithm for computing Latin rectangle extensions, a fundamental problem in combinatorics. Given the first two rows of a Latin rectangle (where the first row is the identity permutation and the second row is a derangement), the library calculates how many valid third rows exist.
+A **Latin rectangle** is an r×n array filled with n different symbols such that each symbol occurs exactly once in each row and at most once in each column.
+
+### Extension Problem
+
+Given a 2×n Latin rectangle:
+
+```text
+1  2  3  4  5  6  7  8
+p[1]  p[2]  p[3]  p[4]  p[5]  p[6]  p[7]  p[8]
+```
+
+where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle. This library provides an efficient algorithm for computing Latin rectangle extensions.
 
 ### Key Features
 
@@ -19,8 +30,7 @@ This library provides an efficient algorithm for computing Latin rectangle exten
 
 ## Installation
 
-```bash
-# Clone the repository
+```console
 git clone https://github.com/ionmich/latin-rectangles.git
 cd latin-rectangles
 ```
@@ -242,23 +252,6 @@ uv run python benchmark.py
 # Analyze complexity
 uv run python complexity_analysis.py
 ```
-
-## Mathematical Background
-
-### Latin Rectangles
-
-A **Latin rectangle** is an r×n array filled with n different symbols such that each symbol occurs exactly once in each row and at most once in each column.
-
-### Extension Problem
-
-Given a 2×n Latin rectangle:
-
-```text
-1  2  3  4  5  6  7  8
-p[1]  p[2]  p[3]  p[4]  p[5]  p[6]  p[7]  p[8]
-```
-
-where `p` is a derangement, the problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle.
 
 ## Contributing
 
