@@ -68,4 +68,40 @@ def find_cycle_decomposition(p: list[int]) -> list[list[int]]:
     return cycles
 
 
-__all__ = ["find_cycle_decomposition", "generate_random_derangement"]
+def create_cycle_structure(cycle_lengths: list[int]) -> list[int]:
+    """
+    Create a derangement with a specific cycle structure.
+
+    Args:
+        cycle_lengths: List of desired cycle lengths
+
+    Returns:
+        1-indexed permutation with the specified cycle structure
+
+    Raises:
+        ValueError: If cycle_lengths contains a 1-cycle (would create fixed point)
+    """
+    if 1 in cycle_lengths:
+        raise ValueError("Cycle structure cannot contain 1-cycles (would create fixed points)")
+    
+    n = sum(cycle_lengths)
+    if n == 0:
+        return [0]
+    
+    perm = [0] * (n + 1)  # 1-indexed with 0 at start
+    current_pos = 1
+
+    for cycle_len in cycle_lengths:
+        # Get positions for this cycle
+        cycle_positions = list(range(current_pos, current_pos + cycle_len))
+        
+        # Create the cycle: each position points to the next, last points to first
+        for i in range(cycle_len):
+            perm[cycle_positions[i]] = cycle_positions[(i + 1) % cycle_len]
+        
+        current_pos += cycle_len
+
+    return perm
+
+
+__all__ = ["find_cycle_decomposition", "generate_random_derangement", "create_cycle_structure"]

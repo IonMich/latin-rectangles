@@ -11,7 +11,7 @@ This library provides an efficient algorithm for computing Latin rectangle exten
 
 ### Key Features
 
-- **High Performance**: Approximate O(n^2) time complexity, tested up to n=800
+- **High Performance**: Approximate O(n^2) time complexity, tested **up to n=800**.
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
 - **Mathematically Rigorous**: Based on rook polynomial theory and cycle decomposition
 - **Easy to Use**: Simple command-line interface and Python API
@@ -21,33 +21,55 @@ This library provides an efficient algorithm for computing Latin rectangle exten
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/latin-rectangles.git
+git clone https://github.com/ionmich/latin-rectangles.git
 cd latin-rectangles
-
-# Install the package
-pip install -e .
 ```
 
 ## Quick Start
 
-### Command Line Usage
+### Command Line (CLI) Usage
 
-```bash
-# Run demonstration with predefined examples
-latin-rectangles
+Generate random derangement:
 
-# Generate random derangement for specific size
-latin-rectangles --n 15
-latin-rectangles generate 20
-
-# Run demo examples
-latin-rectangles demo
-
-# Get help
-latin-rectangles --help
+```console
+> uv run python -m latin_rectangles --n 42
+🎲 Generated Random Derangement for n=42
+📊 Cycle structure: [2, 2, 4, 8, 26]
+🔢 Number of extensions: 185,566,788,772,996,286,199,647,931,971,186,844,003,087,641,029,824
 ```
 
-### Python Library Usage
+Use specific cycle structure:
+
+```console
+> uv run python -m latin_rectangles --c "2,2,4"
+⚙️  Specific Cycle Structure for n=8
+📊 Cycle structure: [2, 2, 4]
+🔢 Number of extensions: 4,744
+```
+
+Enumerate all possible cycle structures:
+
+```console
+> uv run python -m latin_rectangles --n 8 --all
+🔍 All Cycle Structures for n=8
+📊 Found 7 possible structures with non-zero extensions:
+
+ 1. [2, 2, 2, 2] → 4,752 extensions
+ 2. [2, 2, 4] → 4,744 extensions
+ 3. [2, 3, 3] → 4,740 extensions
+ 4. [2, 6] → 4,740 extensions
+ 5. [4, 4] → 4,740 extensions
+ 6. [3, 5] → 4,738 extensions
+ 7. [8] → 4,738 extensions
+```
+
+## Get help
+
+```console
+uv run latin-rectangles --help
+```
+
+## Python Library Usage
 
 ```python
 from latin_rectangles import count_extensions, count_random_extensions
@@ -88,6 +110,7 @@ The algorithm leverages **rook polynomial theory** to solve the Latin rectangle 
 Counts the number of extensions for a given derangement.
 
 **Parameters:**
+
 - `permutation`: 1-indexed list representing a derangement (p[0] is dummy value)
 
 **Returns:** Integer number of possible third rows
@@ -99,6 +122,7 @@ Counts the number of extensions for a given derangement.
 Convenience function that generates a random derangement and counts its extensions.
 
 **Parameters:**
+
 - `n`: Size of the derangement (must be > 1)
 
 **Returns:** Number of extensions for the randomly generated derangement
@@ -108,6 +132,7 @@ Convenience function that generates a random derangement and counts its extensio
 Generates a random derangement of size n.
 
 **Parameters:**
+
 - `n`: Size of the derangement
 
 **Returns:** 1-indexed list representing the derangement
@@ -117,6 +142,7 @@ Generates a random derangement of size n.
 Finds the cycle decomposition of a permutation.
 
 **Parameters:**
+
 - `permutation`: 1-indexed permutation
 
 **Returns:** List of cycles (each cycle is a list of indices)
@@ -185,36 +211,36 @@ print(f"Maximum: n={max_n} with {max_extensions:,} extensions")
 
 ```bash
 # Run the test suite
-pytest
+uv run pytest
 
 # Run with coverage
-pytest --cov=latin_rectangles
+uv run pytest --cov=latin_rectangles
 
 # Run specific test
-pytest tests/test_main.py -v
+uv run pytest tests/test_main.py -v
 ```
 
 ### Code Quality
 
 ```bash
 # Type checking
-mypy src/
+uv run mypy src/
 
 # Linting
-ruff check src/
+uv run ruff check src/
 
 # Formatting
-ruff format src/
+uv run ruff format src/
 ```
 
 ### Benchmarking
 
 ```bash
 # Run performance benchmarks
-python benchmark.py
+uv run python benchmark.py
 
 # Analyze complexity
-python complexity_analysis.py
+uv run python complexity_analysis.py
 ```
 
 ## Mathematical Background
@@ -226,10 +252,12 @@ A **Latin rectangle** is an r×n array filled with n different symbols such that
 ### Extension Problem
 
 Given a 2×n Latin rectangle:
-```
+
+```text
 1  2  3  4  5  6  7  8
 p[1]  p[2]  p[3]  p[4]  p[5]  p[6]  p[7]  p[8]
 ```
+
 where `p` is a derangement, the problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle.
 
 ## Contributing
