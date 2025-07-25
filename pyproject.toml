@@ -28,8 +28,6 @@ dev = [
 [tool.ruff]
 # Set the maximum line length to 88 (Black's default)
 line-length = 88
-# Target Python 3.12+
-target-version = "py312"
 
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
 # Unlike Flake8, Ruff doesn't enable pycodestyle warnings (`W`) or
