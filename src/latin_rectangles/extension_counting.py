@@ -3,10 +3,14 @@
 import math
 
 from .derangements import find_cycle_decomposition
-from .rook_polynomials import get_rook_polynomial_for_cycle, multiply_polynomials
+from .rook_polynomials import (
+    get_rook_polynomial_for_cycle,
+    multiply_polynomials,
+    multiply_polynomials_fft,
+)
 
 
-def count_extensions(permutation: list[int]) -> int:
+def count_extensions(permutation: list[int], *, use_fft: bool = False) -> int:
     """
     Calculates the number of ways to extend a 2xn Latin rectangle to a 3xn one.
     This is the most robust and general implementation.
@@ -35,7 +39,10 @@ def count_extensions(permutation: list[int]) -> int:
     for cycle in cycles:
         k = len(cycle)
         cycle_rook_poly = get_rook_polynomial_for_cycle(k)
-        total_rook_poly = multiply_polynomials(total_rook_poly, cycle_rook_poly)
+        if use_fft:
+            total_rook_poly = multiply_polynomials_fft(total_rook_poly, cycle_rook_poly)
+        else:
+            total_rook_poly = multiply_polynomials(total_rook_poly, cycle_rook_poly)
 
     # 3. Apply the Principle of Inclusion-Exclusion to get the final count.
     total_ways = 0

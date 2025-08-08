@@ -22,11 +22,8 @@ where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the pro
 
 ### Key Features
 
-- **High Performance**: Approximate O(n^2) time complexity, tested **up to n=800**.
+- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity); in principle, FFT-based convolution could reduce the polynomial products toward ~O(n log n)
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
-- **Mathematically Rigorous**: Based on rook polynomial theory and cycle decomposition
-- **Easy to Use**: Simple command-line interface and Python API
-- **Well Tested**: Comprehensive test suite with complexity analysis
 
 ## Installation
 
@@ -43,6 +40,7 @@ pip install latin-rectangles
 Using the [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/), you can try out the package without a separate installation step:
 
 ```console
+# Get the number of extensions for a random derangement for a specific number of columns
 uvx latin-rectangles --n 42
 ```
 
@@ -55,7 +53,7 @@ uv add latin-rectangles
 
 ### Manual Installation
 
-*Alternatively*, you can clone the repository and install it manually:
+*Alternatively*, you can clone the repository and install it from source:
 
 ```console
 git clone https://github.com/ionmich/latin-rectangles.git
@@ -109,8 +107,12 @@ uv run latin-rectangles --help
 ## Python Library Usage
 
 ```python
-from latin_rectangles import count_extensions, count_random_extensions
-from latin_rectangles import generate_random_derangement
+from latin_rectangles import (
+  count_extensions,
+  count_random_extensions,
+  generate_random_derangement,
+  count_cycle_structure_extensions,
+)
 
 # Method 1: One-liner for random derangement
 extensions = count_random_extensions(n=12)
@@ -121,7 +123,12 @@ derangement = generate_random_derangement(n=10)
 extensions = count_extensions(derangement)
 print(f"Derangement {derangement[1:]} has {extensions:,} extensions")
 
-# Method 3: With predefined derangement (1-indexed with dummy 0)
+# Method 3: Using a specific cycle structure (e.g., "2,2,4") in one line
+cycle_lengths = [2, 2, 4]
+extensions = count_cycle_structure_extensions(cycle_lengths)
+print(f"Cycle structure {cycle_lengths} has {extensions:,} extensions")  # 4,744 for n=8
+
+# Method 4: With predefined derangement (1-indexed with dummy 0)
 p = [0, 2, 3, 4, 5, 6, 7, 8, 1]  # 8-cycle for n=8
 extensions = count_extensions(p)
 print(f"8-cycle has {extensions:,} extensions")  # Output: 4,738
@@ -137,6 +144,19 @@ The algorithm leverages **rook polynomial theory** to solve the Latin rectangle 
 2. **Cycle Decomposition**: Decompose the derangement into disjoint cycles
 3. **Rook Polynomials**: Compute rook polynomial for each cycle structure
 4. **Polynomial Multiplication**: Combine rook polynomials to get the final count
+
+## Complexity
+
+- Per derangement (fixed 2×n Latin rectangle): the implemented method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). With FFT-based convolution, the per-derangement time can, in principle, approach ~O(n log n).
+
+- Enumerating all relevant cycle types at a fixed n: the number of distinct cycle-type inputs is
+  T(n) = p(n) − p(n − 1),
+  where p(n) is the partition function (partitions of n). Using the Hardy–Ramanujan asymptotic
+  p(n) ≍ (1/(4√3 n)) · exp(C √n) with C = π√(2/3), one gets
+  T(n) = p(n) − p(n − 1) = Θ(exp(C √n) / n^{3/2}).
+  Therefore, the total time to compute extensions for all cycle types scales as
+  O(n^2 · T(n)) = O(√n · exp(C √n))
+  with the constant C = π√(2/3). Peak memory is still governed by the per-derangement footprint since enumeration can reuse buffers.
 
 ## API Reference
 
@@ -300,7 +320,7 @@ If you use this library in your research, please cite:
 
 ```bibtex
 @software{latin_rectangles,
-  title={Latin Rectangles Extension Counter},
+  title={Latin Rectangles Extensions},
   author={Ioannis Michaloliakos},
   year={2025},
   url={https://github.com/ionmich/latin-rectangles}

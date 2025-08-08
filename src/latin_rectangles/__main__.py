@@ -3,7 +3,11 @@
 import argparse
 import sys
 
-from .derangements import find_cycle_decomposition, generate_random_derangement, create_cycle_structure
+from .derangements import (
+    create_cycle_structure,
+    find_cycle_decomposition,
+    generate_random_derangement,
+)
 from .extension_counting import count_extensions
 
 
@@ -28,7 +32,9 @@ def count_random_extensions(n: int) -> tuple[int, list[int], int]:
     return n, cycle_lengths, extensions
 
 
-def count_cycle_structure_extensions(cycle_structure: str) -> tuple[int, list[int], int]:
+def count_cycle_structure_extensions(
+    cycle_structure: str,
+) -> tuple[int, list[int], int]:
     """
     Create a derangement with specific cycle structure and count its extensions.
 
@@ -40,19 +46,18 @@ def count_cycle_structure_extensions(cycle_structure: str) -> tuple[int, list[in
     """
     try:
         cycle_lengths = [int(x.strip()) for x in cycle_structure.split(",")]
-    except ValueError:
-        raise ValueError("Cycle structure must be comma-separated integers")
-    
+    except ValueError as exc:
+        raise ValueError("Cycle structure must be comma-separated integers") from exc
     if not cycle_lengths:
         raise ValueError("Cycle structure cannot be empty")
-    
+
     n = sum(cycle_lengths)
     if n <= 1:
         raise ValueError("Total size must be greater than 1")
-    
+
     p = create_cycle_structure(cycle_lengths)
     extensions = count_extensions(p)
-    
+
     return n, sorted(cycle_lengths), extensions
 
 
@@ -67,7 +72,10 @@ def generate_all_cycle_structures(n: int) -> list[list[int]]:
     Returns:
         List of cycle structures, each as a sorted list of cycle lengths
     """
-    def partitions_with_min_part(target: int, min_part: int, current: list[int]) -> list[list[int]]:
+
+    def partitions_with_min_part(
+        target: int, min_part: int, current: list[int]
+    ) -> list[list[int]]:
         """Generate partitions of target where all parts are >= min_part."""
         if target == 0:
             return [current[:]]
@@ -78,7 +86,9 @@ def generate_all_cycle_structures(n: int) -> list[list[int]]:
         result = []
         for part_size in range(min_part, target + 1):
             current.append(part_size)
-            result.extend(partitions_with_min_part(target - part_size, part_size, current))
+            result.extend(
+                partitions_with_min_part(target - part_size, part_size, current)
+            )
             current.pop()
 
         return result
@@ -116,8 +126,11 @@ def enumerate_all_extensions(n: int) -> list[tuple[list[int], int]]:
     return results
 
 
-def main() -> None:
-    """Main function with command-line interface for Latin rectangle extension counting."""
+def main(argv: list[str] | None = None) -> None:
+    """Parse CLI arguments and run. If argv is None, use sys.argv[1:]."""
+    if argv is None:
+        argv = sys.argv[1:]
+
     parser = argparse.ArgumentParser(
         description="Latin Rectangles Extension Counter",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -132,17 +145,27 @@ Examples:
     )
     # Add --n option for backward compatibility
     parser.add_argument("--n", type=int, help="Size of the derangement (must be > 1)")
-    parser.add_argument("--c", type=str, help="Cycle structure as comma-separated integers (e.g., '2,2,4' for two 2-cycles and one 4-cycle)")
-    parser.add_argument("--all", action="store_true", help="Enumerate all possible cycle structures for given n (use with --n)")
+    parser.add_argument(
+        "--c",
+        type=str,
+        help="Cycle structure as comma-separated integers (e.g., '2,2,4' for two 2-cycles and one 4-cycle)",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        help="Enumerate all possible cycle structures for given n (use with --n)",
+    )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.n and args.c:
         print("❌ Error: Cannot specify both --n and --c arguments", file=sys.stderr)
         sys.exit(1)
 
     if args.c and args.all:
-        print("❌ Error: Cannot use --all with --c (use --all with --n)", file=sys.stderr)
+        print(
+            "❌ Error: Cannot use --all with --c (use --all with --n)", file=sys.stderr
+        )
         sys.exit(1)
 
     if not args.n and not args.c:
@@ -158,7 +181,9 @@ Examples:
                 sys.exit(1)
 
             print(f"🔍 All Cycle Structures for n={args.n}")
-            print(f"📊 Found {len(results)} possible structures with non-zero extensions:")
+            print(
+                f"📊 Found {len(results)} possible structures with non-zero extensions:"
+            )
             print()
 
             for i, (cycle_structure, extensions) in enumerate(results, 1):
@@ -183,4 +208,4 @@ Examples:
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

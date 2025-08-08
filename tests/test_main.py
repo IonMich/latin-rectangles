@@ -7,7 +7,6 @@ from latin_rectangles import (
     find_cycle_decomposition,
     generate_random_derangement,
 )
-from latin_rectangles.__main__ import main
 
 
 class TestGenerateRandomDerangement:
@@ -169,17 +168,7 @@ class TestCountExtensions:
             result = count_extensions(p)
             assert result >= 0, f"Negative result for permutation {p}"
 
-
-class TestMainFunction:
-    """Test the main demonstration function."""
-
-    def test_main_runs_without_error(self, capsys: pytest.CaptureFixture[str]) -> None:
-        """Test that main function runs without error and produces output."""
-        main()
-        captured = capsys.readouterr()
-        assert "Latin Rectangles Extension Counter" in captured.out
-        assert "Verifying results for n=8" in captured.out
-        assert "Number of extensions:" in captured.out
+    # CLI behavior is covered in tests/test_cli.py
 
 
 class TestIntegration:

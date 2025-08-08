@@ -1,6 +1,6 @@
 [project]
 name = "latin-rectangles"
-version = "0.1.1"
+version = "0.1.2"
 description = "Count the number of one-row extensions of Latin rectangles."
 readme = "README.md"
 authors = [
