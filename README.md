@@ -22,7 +22,7 @@ where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the pro
 
 ### Key Features
 
-- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity); in principle, FFT-based convolution could reduce the polynomial products toward ~O(n log n)
+- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity); Implemented also FFT-based convolution (`use_fft=True`) to reduce the polynomial products toward ~O(n log n)
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
 
 ## Installation
