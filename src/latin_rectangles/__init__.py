@@ -5,7 +5,11 @@ from .derangements import (
     find_cycle_decomposition,
     generate_random_derangement,
 )
-from .extension_counting import count_extensions
+from .extension_counting import (
+    _count_cycle_structure_extensions_signed,
+    count_extensions,
+)
+from .general_extensions import count_extensions_k
 
 
 def count_random_extensions(n: int) -> int:
@@ -52,14 +56,14 @@ def count_cycle_structure_extensions(cycle_lengths: list[int]) -> int:
     Raises:
         ValueError: If the cycle_lengths include 1 (fixed points) or are invalid.
     """
-    p = create_cycle_structure(cycle_lengths)
-    return count_extensions(p)
+    return _count_cycle_structure_extensions_signed(cycle_lengths)
 
 
 # Export the main functions
 __all__ = [
     "count_cycle_structure_extensions",
     "count_extensions",
+    "count_extensions_k",
     "count_random_extensions",
     "create_cycle_structure",
     "find_cycle_decomposition",

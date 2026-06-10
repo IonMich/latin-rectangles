@@ -22,8 +22,9 @@ where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the pro
 
 ### Key Features
 
-- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity); Implemented also FFT-based convolution (`use_fft=True`) to reduce the polynomial products toward ~O(n log n)
+- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available for large polynomial products and a cached signed-sum formula for repeated cycle-structure queries
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
+- **Generalization to k→k+1**: Exact counting for extending k×n to (k+1)×n via component-wise rook/matching polynomials; exponential in the worst case (as expected from #P-completeness), but fast when orbits/components are small
 
 ## Installation
 
@@ -109,6 +110,7 @@ uv run latin-rectangles --help
 ```python
 from latin_rectangles import (
   count_extensions,
+  count_extensions_k,
   count_random_extensions,
   generate_random_derangement,
   count_cycle_structure_extensions,
@@ -132,6 +134,16 @@ print(f"Cycle structure {cycle_lengths} has {extensions:,} extensions")  # 4,744
 p = [0, 2, 3, 4, 5, 6, 7, 8, 1]  # 8-cycle for n=8
 extensions = count_extensions(p)
 print(f"8-cycle has {extensions:,} extensions")  # Output: 4,738
+
+# Bonus: General k→k+1 extension counting (small example)
+# Rows are 1-indexed permutations; the first row may be non-identity (will be standardized).
+rows = [
+  [0, 1, 2, 3, 4],      # identity
+  [0, 2, 1, 4, 3],      # (1 2)(3 4)
+  [0, 3, 4, 1, 2],      # (1 3)(2 4)
+]
+extensions_k = count_extensions_k(rows)
+print(f"Extend 3×4 → 4×4: {extensions_k} ways")
 ```
 
 ## Algorithm Details
@@ -145,9 +157,30 @@ The algorithm leverages **rook polynomial theory** to solve the Latin rectangle 
 3. **Rook Polynomials**: Compute rook polynomial for each cycle structure
 4. **Polynomial Multiplication**: Combine rook polynomials to get the final count
 
+For direct cycle-structure inputs, the implementation also uses a signed-sum
+identity. If the cycle lengths are `l_1, ..., l_c`, then
+
+```text
+E(l_1, ..., l_c) = 1/2 * sum_epsilon M_|epsilon_1 l_1 + ... + epsilon_c l_c|
+```
+
+where `M_s` is the one-cycle inclusion-exclusion value. The values `M_0 = 2`
+and `M_1 = -1` are formal correction terms from the Chebyshev polynomial
+identity; they are not extension counts for actual 0- or 1-cycles.
+
+Internally, the rook polynomial for one `l`-cycle stores positive matching
+numbers `r_j`, while the signed-sum proof uses the reversed signed polynomial
+`q_l(t) = sum_j (-1)^j r_j t^(l-j)` and the linear functional `F(t^d) = d!`.
+For `l >= 2`, `M_l = F(q_l)` is exactly the same inclusion-exclusion count
+computed from the rook polynomial.
+
 ## Complexity
 
-- Per derangement (fixed 2×n Latin rectangle): the implemented method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). With FFT-based convolution, the per-derangement time can, in principle, approach ~O(n log n).
+- Per derangement (fixed 2×n Latin rectangle): the default method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). The optional `use_fft=True` path uses exact NTT/CRT convolution for large dense polynomial products and falls back to schoolbook multiplication for small or skinny products.
+
+- Repeated cycle-structure queries: the signed-sum method reuses cached
+  one-cycle values `M_s`, which is especially useful when enumerating all cycle
+  structures for a fixed `n`.
 
 - Enumerating all relevant cycle types at a fixed n: the number of distinct cycle-type inputs is
   T(n) = p(n) − p(n − 1),
@@ -173,6 +206,9 @@ Counts the number of extensions for a given derangement.
 **Returns:** Integer number of possible third rows
 
 **Raises:** `ValueError` if input is not a derangement
+
+The optional `use_fft=True` argument uses exact NTT/CRT convolution for large
+polynomial products. It does not use rounded floating-point convolution.
 
 #### `count_random_extensions(n: int) -> int`
 

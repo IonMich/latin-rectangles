@@ -4,11 +4,13 @@ import argparse
 import sys
 
 from .derangements import (
-    create_cycle_structure,
     find_cycle_decomposition,
     generate_random_derangement,
 )
-from .extension_counting import count_extensions
+from .extension_counting import (
+    _count_cycle_structure_extensions_signed,
+    count_extensions,
+)
 
 
 def count_random_extensions(n: int) -> tuple[int, list[int], int]:
@@ -55,8 +57,7 @@ def count_cycle_structure_extensions(
     if n <= 1:
         raise ValueError("Total size must be greater than 1")
 
-    p = create_cycle_structure(cycle_lengths)
-    extensions = count_extensions(p)
+    extensions = _count_cycle_structure_extensions_signed(cycle_lengths)
 
     return n, sorted(cycle_lengths), extensions
 
@@ -117,8 +118,7 @@ def enumerate_all_extensions(n: int) -> list[tuple[list[int], int]]:
     results = []
 
     for cycle_lengths in structures:
-        p = create_cycle_structure(cycle_lengths)
-        extensions = count_extensions(p)
+        extensions = _count_cycle_structure_extensions_signed(cycle_lengths)
         results.append((cycle_lengths, extensions))
 
     # Sort by extensions count (descending), then by cycle structure

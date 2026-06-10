@@ -4,6 +4,7 @@ import pytest
 
 from latin_rectangles import (
     count_extensions,
+    count_extensions_k,
     find_cycle_decomposition,
     generate_random_derangement,
 )
@@ -196,3 +197,71 @@ class TestIntegration:
 
             assert set(all_elements) == set(range(1, n + 1))
             assert len(all_elements) == n
+
+    def test_general_k_matches_two_row_case(self) -> None:
+        """For two existing rows (id + derangement), general method matches specialized."""
+        # Build rows: first identity, second is a derangement p
+        p = [0, 2, 3, 1]  # 3-cycle
+        rows = [[0, 1, 2, 3], p]
+        general = count_extensions_k(rows)
+        specialized = count_extensions(p)
+        assert general == specialized
+
+    def test_general_k_consistency_multiple_derangements(self) -> None:
+        """Consistency with 2→3 method across a few small derangements."""
+        cases: list[list[int]] = [
+            [0, 2, 3, 1],  # (1 2 3)
+            [0, 2, 1, 4, 3],  # (1 2)(3 4)
+            [0, 2, 3, 4, 1],  # (1 2 3 4)
+        ]
+        for p in cases:
+            n = len(p) - 1
+            id_row = [0, *list(range(1, n + 1))]
+            assert count_extensions_k([id_row, p]) == count_extensions(p)
+
+    def test_general_k_small_examples(self) -> None:
+        """Check small n and k against a direct permanent for sanity."""
+
+        def permanent_of_allowed(rows: list[list[int]]) -> int:
+            # Build A[i,j] = 1 if i not in {rows[r][j] for r}
+            n = len(rows[0]) - 1
+            used: list[set[int]] = [set() for _ in range(n + 1)]
+            for r in rows:
+                for j in range(1, n + 1):
+                    used[j].add(r[j])
+            # brute-force sum over permutations of [1..n]
+            ans = 0
+            from itertools import permutations
+
+            for perm in permutations(range(1, n + 1)):
+                ok = True
+                for j, i in enumerate(perm, start=1):
+                    if i in used[j]:
+                        ok = False
+                        break
+                ans += int(ok)
+            return ans
+
+        # n=3, k=2 (two rows: id and a 3-cycle derangement)
+        rows = [[0, 1, 2, 3], [0, 2, 3, 1]]
+        assert count_extensions_k(rows) == permanent_of_allowed(rows)
+
+        # n=4, k=3 (three rows): id, (1 2)(3 4), and (1 3)(2 4)
+        rows2 = [
+            [0, 1, 2, 3, 4],
+            [0, 2, 1, 4, 3],
+            [0, 3, 4, 1, 2],
+        ]
+        assert count_extensions_k(rows2) == permanent_of_allowed(rows2)
+
+    def test_n_minus_1_rows_unique_extension(self) -> None:
+        """With k=n-1 rows formed by powers of an n-cycle, there is exactly one extension."""
+
+        def power_cycle_perm(n: int, power: int) -> list[int]:
+            # 1-indexed: i -> ((i-1 + power) % n) + 1
+            return [0] + [((i - 1 + power) % n) + 1 for i in range(1, n + 1)]
+
+        for n in [3, 4, 5]:
+            # rows: π^0, π^1, ..., π^{n-2}; unique allowed symbol per column is π^{n-1}
+            rows = [power_cycle_perm(n, r) for r in range(n - 1)]
+            assert count_extensions_k(rows) == 1

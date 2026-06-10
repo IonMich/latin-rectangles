@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Benchmark naive vs FFT polynomial multiplication paths.
+"""Benchmark schoolbook vs exact NTT/CRT polynomial multiplication paths.
 
 Two parts:
-1) Direct polynomial convolution benchmark (synthetic), which isolates the
-    asymptotics: naive O(n^2) vs FFT O(n log n).
-2) Controlled algorithm-internal benchmark using a single n-cycle permutation,
-    which performs one convolution of degree n inside count_extensions.
+1) Direct polynomial convolution benchmark (synthetic).
+2) Controlled algorithm-internal benchmark using a single n-cycle permutation.
+
+The transform path is exact: it uses NTT primes and CRT reconstruction rather
+than rounded floating-point convolution.
 """
 
 from __future__ import annotations
@@ -37,7 +38,7 @@ def fit_power(x: list[float], y: list[float]) -> float:
 def bench_polymul(
     ns: list[int], repeats: int = 3
 ) -> tuple[list[int], list[float], list[float]]:
-    """Benchmark naive vs FFT on random polynomial pairs of equal length n."""
+    """Benchmark naive multiplication vs exact transform multiplication."""
     times_naive: list[float] = []
     times_fft: list[float] = []
     for n in ns:
@@ -103,7 +104,7 @@ def main() -> None:
     print("fft  (s):", [f"{t:.3e}" for t in t1_fft])
     print(f"Observed exponent naive ~ n^{b1_naive:.2f}")
     print(f"Observed exponent fft   ~ n^{b1_fft:.2f}")
-    print("(Targets: ~2.00 naive, ~1.00 for n log n over moderate ranges)\n")
+    print("(The transform path is exact NTT/CRT, not floating-point FFT.)\n")
 
     print("=== Single-cycle count_extensions (one convolution) ===")
     n2, t2_naive, t2_fft = bench_single_cycle(ns_cycle)
