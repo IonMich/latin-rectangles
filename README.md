@@ -150,7 +150,12 @@ print(f"Extend 3×4 → 4×4: {extensions_k} ways")
 
 ### Mathematical Foundation
 
-The algorithm leverages **rook polynomial theory** to solve the Latin rectangle extension problem:
+The algorithms are derived in detail in [docs/methods.md](docs/methods.md),
+including notation, the rook-polynomial formula, the signed-sum identity, the
+exact NTT/CRT convolution path, and the general `k x n -> (k + 1) x n` method.
+
+At a high level, the specialized `2 x n -> 3 x n` counter uses **rook
+polynomial theory**:
 
 1. **Input**: A derangement (permutation with no fixed points) representing the second row
 2. **Cycle Decomposition**: Decompose the derangement into disjoint cycles
