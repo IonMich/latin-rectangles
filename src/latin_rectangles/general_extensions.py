@@ -161,6 +161,19 @@ def _component_matching_polynomial(neigh_masks: list[int], m: int) -> list[int]:
     return list(dp(full_l, full_r))
 
 
+def _derangement_number(n: int) -> int:
+    """Return the number of derangements of n symbols."""
+    if n < 0:
+        raise ValueError("n must be non-negative")
+    if n == 0:
+        return 1
+    prev2 = 1  # !0
+    prev1 = 0  # !1
+    for k in range(2, n + 1):
+        prev2, prev1 = prev1, (k - 1) * (prev1 + prev2)
+    return prev1
+
+
 def count_extensions_k(rows: list[list[int]], *, use_fft: bool = False) -> int:
     """Count extensions from k x n to (k+1) x n given k rows (as permutations).
 
@@ -173,9 +186,11 @@ def count_extensions_k(rows: list[list[int]], *, use_fft: bool = False) -> int:
         The number of valid extensions (permanent of the allowed matrix).
 
     Notes:
-                - Exact worst-case time is exponential in the size of the largest orbit
-                    of <sigma2,...,sigmak> (as expected from #P-completeness).
-        - Fast on inputs whose orbits are small; otherwise will be slow.
+        - With one existing row, this returns the derangement number in O(n).
+        - With multiple rows, exact worst-case time is exponential in the size
+          of the largest orbit of <sigma2,...,sigmak> (as expected from
+          #P-completeness).
+        - It is fast on inputs whose orbits are small; otherwise it will be slow.
         - use_fft=True uses exact transform-based multiplication, not the old
           floating-point convolution path.
     """
@@ -187,14 +202,13 @@ def count_extensions_k(rows: list[list[int]], *, use_fft: bool = False) -> int:
         return 1  # empty permutation → exactly one empty extension
     if any(len(r) != n + 1 for r in rows):
         raise ValueError("All rows must have the same length (1-indexed permutations)")
+    if k == 1:
+        return _derangement_number(n)
 
     std_rows = _standardize_rows(rows)
     # Generators for orbit computation exclude the first identity row
-    generators = std_rows[1:] if k > 1 else []
-    # Only the identity row present: forbidden F is just the identity matching
-    # R_F(x) = (1 + x)^n, thus per(A) = n! * [t^n] e^t (1 + (-t))^n = n! * [t^n] e^t (1 - t)^n
-    # We can compute via direct formula, but reuse the general path by a single component of size n
-    orbits = [list(range(1, n + 1))] if not generators else _compute_orbits(generators)
+    generators = std_rows[1:]
+    orbits = _compute_orbits(generators)
 
     # Build component matching polynomials
     polys: list[list[int]] = []

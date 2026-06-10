@@ -254,6 +254,29 @@ class TestIntegration:
         ]
         assert count_extensions_k(rows2) == permanent_of_allowed(rows2)
 
+    def test_general_k_one_row_counts_derangements(self) -> None:
+        """With one existing row, extensions are exactly derangements."""
+        known_derangements = {
+            0: 1,
+            1: 0,
+            2: 1,
+            3: 2,
+            4: 9,
+            5: 44,
+            6: 265,
+            7: 1854,
+            8: 14833,
+        }
+        for n, expected in known_derangements.items():
+            identity = [0, *list(range(1, n + 1))]
+            assert count_extensions_k([identity]) == expected
+            assert count_extensions_k([identity], use_fft=True) == expected
+
+    def test_general_k_one_row_large_n_fast_path(self) -> None:
+        """A one-row input should not enter the exponential component DP."""
+        identity = [0, *list(range(1, 101))]
+        assert count_extensions_k([identity]).bit_length() == 524
+
     def test_n_minus_1_rows_unique_extension(self) -> None:
         """With k=n-1 rows formed by powers of an n-cycle, there is exactly one extension."""
 

@@ -414,6 +414,19 @@ The first row may be non-identity. The implementation standardizes it by
 relabeling symbols with `sigma_1^{-1}`, so the first row becomes identity.
 This does not change the number of valid extensions.
 
+If `k = 1`, the problem is just to choose a next row that avoids the only
+existing row in every column. After standardization, this is the number of
+derangements of `[n]`, written `!n`. The implementation handles this case
+directly in `O(n)` using:
+
+```text
+!0 = 1
+!1 = 0
+!n = (n - 1)(!(n - 1) + !(n - 2)).
+```
+
+The component matching dynamic program is used only when `k >= 2`.
+
 For each column `j`, the forbidden symbols are:
 
 ```text
