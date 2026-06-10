@@ -22,7 +22,7 @@ where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the pro
 
 ### Key Features
 
-- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available for large polynomial products and a cached signed-sum formula for repeated cycle-structure queries
+- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available when CRT reconstruction is not too expensive and a cached signed-sum formula for repeated cycle-structure queries
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
 - **Generalization to k→k+1**: Exact counting for extending k×n to (k+1)×n via component-wise rook/matching polynomials; exponential in the worst case (as expected from #P-completeness), but fast when orbits/components are small
 
@@ -82,6 +82,19 @@ Use specific cycle structure:
 📊 Cycle structure: [2, 2, 4]
 🔢 Number of extensions: 4,744
 ```
+
+Large counts are summarized by default to keep the CLI usable and to avoid
+Python's decimal integer string-conversion guard:
+
+```console
+> uv run python -m latin_rectangles --n 1700
+🎲 Generated Random Derangement for n=1700
+📊 Cycle structure: [...]
+🔢 Number of extensions: 4,685 decimal digits (bits=15,562; leading=...; trailing=...; mod 1,000,000,007=...; use --full-output to print all digits)
+```
+
+Use `--full-output` to print the entire decimal integer, or `--max-digits N` to
+raise/lower the exact-printing threshold.
 
 Enumerate all possible cycle structures:
 
@@ -153,6 +166,8 @@ print(f"Extend 3×4 → 4×4: {extensions_k} ways")
 The algorithms are derived in detail in [docs/methods.md](docs/methods.md),
 including notation, the rook-polynomial formula, the signed-sum identity, the
 exact NTT/CRT convolution path, and the general `k x n -> (k + 1) x n` method.
+The benchmark and plotting workflow is documented in
+[docs/benchmarks.md](docs/benchmarks.md).
 
 At a high level, the specialized `2 x n -> 3 x n` counter uses **rook
 polynomial theory**:
@@ -181,7 +196,7 @@ computed from the rook polynomial.
 
 ## Complexity
 
-- Per derangement (fixed 2×n Latin rectangle): the default method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). The optional `use_fft=True` path uses exact NTT/CRT convolution for large dense polynomial products and falls back to schoolbook multiplication for small or skinny products.
+- Per derangement (fixed 2×n Latin rectangle): the default method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). The optional `use_fft=True` path uses exact NTT/CRT convolution for large dense polynomial products and falls back to schoolbook multiplication for small products, skinny products, or products whose coefficient sizes would require too many CRT primes.
 
 - Repeated cycle-structure queries: the signed-sum method reuses cached
   one-cycle values `M_s`, which is especially useful when enumerating all cycle
@@ -212,8 +227,16 @@ Counts the number of extensions for a given derangement.
 
 **Raises:** `ValueError` if input is not a derangement
 
-The optional `use_fft=True` argument uses exact NTT/CRT convolution for large
-polynomial products. It does not use rounded floating-point convolution.
+The optional `use_fft=True` argument uses exact NTT/CRT convolution only when
+the transform route is expected to be reasonable. It does not use rounded
+floating-point convolution.
+
+#### `count_cycle_structure_extensions(cycle_lengths: list[int], method: str = "auto") -> int`
+
+The default `method="auto"` uses the signed-sum formula when its needed
+one-cycle values are cached or few, and falls back to the rook product for cold
+dense high-`n` cycle types. Explicit methods are `"signed"`, `"rook"`, and
+`"rook_ntt"`.
 
 #### `count_random_extensions(n: int) -> int`
 

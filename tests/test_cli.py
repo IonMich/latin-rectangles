@@ -6,7 +6,12 @@ without interfering with pytest's own arguments.
 
 import pytest
 
-from latin_rectangles.__main__ import main
+import latin_rectangles.__main__ as cli
+from latin_rectangles.__main__ import (
+    _decimal_digit_count,
+    _format_extension_count,
+    main,
+)
 
 
 def test_cli_random_derangement(capsys: pytest.CaptureFixture[str]) -> None:
@@ -30,3 +35,52 @@ def test_cli_enumerate_all(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert "All Cycle Structures for n=4" in out
     assert "Found" in out
+
+
+def test_format_extension_count_summarizes_large_values() -> None:
+    huge_value = 10**500 + 123
+
+    formatted = _format_extension_count(
+        huge_value,
+        max_digits=50,
+        full_output=False,
+    )
+
+    assert _decimal_digit_count(huge_value) == 501
+    assert "501 decimal digits" in formatted
+    assert "leading=100" in formatted
+    assert "trailing=000,000,000,000,000,000,000,123" in formatted
+    assert "use --full-output" in formatted
+
+
+def test_format_extension_count_honors_large_max_digits() -> None:
+    huge_value = 10**5000 + 123
+
+    formatted = _format_extension_count(
+        huge_value,
+        max_digits=5001,
+        full_output=False,
+    )
+
+    assert formatted.startswith("100,000")
+    assert formatted.endswith("123")
+    assert "use --full-output" not in formatted
+
+
+def test_cli_random_large_result_uses_summary(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    huge_value = 10**500 + 123
+
+    def fake_count_random_extensions(n: int) -> tuple[int, list[int], int]:
+        return n, [2, n - 2], huge_value
+
+    monkeypatch.setattr(cli, "count_random_extensions", fake_count_random_extensions)
+
+    main(["--n", "1700", "--max-digits", "50"])
+    out = capsys.readouterr().out
+
+    assert "Generated Random Derangement for n=1700" in out
+    assert "501 decimal digits" in out
+    assert "use --full-output" in out

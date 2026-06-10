@@ -1,6 +1,7 @@
 """Entry point for running the latin_rectangles package as a script."""
 
 import argparse
+import math
 import sys
 
 from .derangements import (
@@ -8,9 +9,98 @@ from .derangements import (
     generate_random_derangement,
 )
 from .extension_counting import (
-    _count_cycle_structure_extensions_signed,
+    count_cycle_structure_extensions as count_cycle_structure_extensions_from_lengths,
+)
+from .extension_counting import (
     count_extensions,
 )
+
+_COUNT_SUMMARY_MODULUS = 1_000_000_007
+_DEFAULT_MAX_OUTPUT_DIGITS = 1_000
+_SUMMARY_EDGE_DIGITS = 24
+
+
+def _positive_int(raw: str) -> int:
+    """Parse a positive CLI integer."""
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"Expected an integer, got {raw!r}") from exc
+    if value <= 0:
+        raise argparse.ArgumentTypeError("Expected a positive integer")
+    return value
+
+
+def _group_decimal_text(text: str) -> str:
+    """Add thousands separators to a decimal string."""
+    sign = ""
+    if text.startswith("-"):
+        sign = "-"
+        text = text[1:]
+    groups: list[str] = []
+    while text:
+        groups.append(text[-3:])
+        text = text[:-3]
+    return sign + ",".join(reversed(groups))
+
+
+def _decimal_digit_count(value: int) -> int:
+    """Return the exact number of decimal digits without converting to str."""
+    value = abs(value)
+    if value < 10:
+        return 1
+
+    digits = int((value.bit_length() - 1) * math.log10(2)) + 1
+    if value >= 10**digits:
+        digits += 1
+    elif value < 10 ** (digits - 1):
+        digits -= 1
+    return digits
+
+
+def _allow_full_integer_output() -> None:
+    """Disable Python's decimal int conversion guard for explicit full output."""
+    if hasattr(sys, "set_int_max_str_digits"):
+        sys.set_int_max_str_digits(0)
+
+
+def _allow_integer_output_digits(digits: int) -> None:
+    """Raise Python's decimal int conversion guard when the CLI opted in."""
+    if not hasattr(sys, "get_int_max_str_digits"):
+        return
+    current_limit = sys.get_int_max_str_digits()
+    if current_limit == 0 or digits <= current_limit:
+        return
+    sys.set_int_max_str_digits(max(digits, 640))
+
+
+def _format_extension_count(value: int, *, max_digits: int, full_output: bool) -> str:
+    """Format an extension count safely for CLI output."""
+    if full_output:
+        _allow_full_integer_output()
+        return f"{value:,}"
+
+    digits = _decimal_digit_count(value)
+    if digits <= max_digits:
+        _allow_integer_output_digits(digits)
+        return f"{value:,}"
+
+    abs_value = abs(value)
+    sign = "-" if value < 0 else ""
+    edge_digits = min(_SUMMARY_EDGE_DIGITS, digits)
+    leading = abs_value // 10 ** (digits - edge_digits)
+    trailing = abs_value % (10**edge_digits)
+    leading_text = _group_decimal_text(str(leading))
+    trailing_text = _group_decimal_text(str(trailing).zfill(edge_digits))
+
+    return (
+        f"{digits:,} decimal digits "
+        f"(bits={value.bit_length():,}; "
+        f"leading={sign}{leading_text}; "
+        f"trailing={trailing_text}; "
+        f"mod {_COUNT_SUMMARY_MODULUS:,}={value % _COUNT_SUMMARY_MODULUS:,}; "
+        "use --full-output to print all digits)"
+    )
 
 
 def count_random_extensions(n: int) -> tuple[int, list[int], int]:
@@ -57,7 +147,7 @@ def count_cycle_structure_extensions(
     if n <= 1:
         raise ValueError("Total size must be greater than 1")
 
-    extensions = _count_cycle_structure_extensions_signed(cycle_lengths)
+    extensions = count_cycle_structure_extensions_from_lengths(cycle_lengths)
 
     return n, sorted(cycle_lengths), extensions
 
@@ -118,7 +208,7 @@ def enumerate_all_extensions(n: int) -> list[tuple[list[int], int]]:
     results = []
 
     for cycle_lengths in structures:
-        extensions = _count_cycle_structure_extensions_signed(cycle_lengths)
+        extensions = count_cycle_structure_extensions_from_lengths(cycle_lengths)
         results.append((cycle_lengths, extensions))
 
     # Sort by extensions count (descending), then by cycle structure
@@ -155,6 +245,20 @@ Examples:
         action="store_true",
         help="Enumerate all possible cycle structures for given n (use with --n)",
     )
+    parser.add_argument(
+        "--max-digits",
+        type=_positive_int,
+        default=_DEFAULT_MAX_OUTPUT_DIGITS,
+        help=(
+            "Maximum decimal digits to print exactly before summarizing a count "
+            f"(default: {_DEFAULT_MAX_OUTPUT_DIGITS})"
+        ),
+    )
+    parser.add_argument(
+        "--full-output",
+        action="store_true",
+        help="Print the full decimal count even when it has thousands of digits",
+    )
 
     args = parser.parse_args(argv)
 
@@ -188,20 +292,33 @@ Examples:
 
             for i, (cycle_structure, extensions) in enumerate(results, 1):
                 if extensions > 0:  # Only show structures with non-zero extensions
-                    print(f"{i:2d}. {cycle_structure} → {extensions:,} extensions")
+                    formatted_extensions = _format_extension_count(
+                        extensions,
+                        max_digits=args.max_digits,
+                        full_output=args.full_output,
+                    )
+                    print(
+                        f"{i:2d}. {cycle_structure} → {formatted_extensions} extensions"
+                    )
 
         elif args.n:
             # Generate random derangement mode
             n_val, cycle_lengths, extensions = count_random_extensions(args.n)
             print(f"🎲 Generated Random Derangement for n={n_val}")
             print(f"📊 Cycle structure: {cycle_lengths}")
-            print(f"🔢 Number of extensions: {extensions:,}")
+            print(
+                "🔢 Number of extensions: "
+                f"{_format_extension_count(extensions, max_digits=args.max_digits, full_output=args.full_output)}"
+            )
         elif args.c:
             # Specific cycle structure mode
             n_val, cycle_lengths, extensions = count_cycle_structure_extensions(args.c)
             print(f"⚙️  Specific Cycle Structure for n={n_val}")
             print(f"📊 Cycle structure: {cycle_lengths}")
-            print(f"🔢 Number of extensions: {extensions:,}")
+            print(
+                "🔢 Number of extensions: "
+                f"{_format_extension_count(extensions, max_digits=args.max_digits, full_output=args.full_output)}"
+            )
     except ValueError as e:
         print(f"❌ Error: {e}", file=sys.stderr)
         sys.exit(1)

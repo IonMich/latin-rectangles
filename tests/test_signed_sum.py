@@ -4,8 +4,10 @@ from latin_rectangles import count_extensions
 from latin_rectangles.__main__ import generate_all_cycle_structures
 from latin_rectangles.derangements import create_cycle_structure
 from latin_rectangles.extension_counting import (
+    _choose_cycle_structure_method,
     _count_cycle_structure_extensions_signed,
     _one_cycle_extension_count,
+    count_cycle_structure_extensions,
 )
 
 
@@ -40,3 +42,24 @@ def test_signed_sum_matches_rook_polynomial_for_small_cycle_structures() -> None
             assert _count_cycle_structure_extensions_signed(cycle_lengths) == (
                 count_extensions(p)
             )
+
+
+def test_cycle_structure_auto_method_routes_cold_dense_large_cases() -> None:
+    """Cold dense high-n cases should not force many uncached M_s computations."""
+    _one_cycle_extension_count.cache_clear()
+    dense_cycle_type = [2] * 300
+
+    assert _choose_cycle_structure_method(tuple(dense_cycle_type)) == "rook"
+    assert count_cycle_structure_extensions(
+        dense_cycle_type, method="auto"
+    ) == count_cycle_structure_extensions(dense_cycle_type, method="rook")
+
+
+def test_cycle_structure_auto_method_uses_warm_signed_cache() -> None:
+    """When every needed M_s is cached, auto should use the signed path."""
+    _one_cycle_extension_count.cache_clear()
+    cycle_type = [2, 2, 4]
+
+    assert count_cycle_structure_extensions(cycle_type, method="signed") == 4744
+    assert _choose_cycle_structure_method(tuple(cycle_type)) == "signed"
+    assert count_cycle_structure_extensions(cycle_type, method="auto") == 4744
