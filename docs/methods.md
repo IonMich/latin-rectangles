@@ -390,8 +390,11 @@ the primes exceeds twice a conservative coefficient bound:
 
 This guarantees exact reconstruction of every coefficient.
 
-The NTT path falls back to schoolbook multiplication when one factor is small
-or the product is skinny, because transform overhead dominates those cases.
+The NTT path falls back to schoolbook multiplication when one factor is small,
+the product is skinny, or the coefficient bound would require many CRT primes.
+The last guard matters for rook polynomials: their coefficients become large
+enough that exact reconstruction can require dozens of modular convolutions,
+which can dominate the asymptotic advantage of the transform.
 
 Implementation mapping:
 
@@ -477,10 +480,10 @@ are small.
 | Task | Recommended path |
 | --- | --- |
 | Count one arbitrary derangement | `count_extensions(permutation)` |
-| Count one cycle structure with few large cycles | `count_cycle_structure_extensions(cycle_lengths)` |
+| Count one cycle structure | `count_cycle_structure_extensions(cycle_lengths)`, using auto routing |
 | Enumerate all cycle structures for a fixed `n` | CLI `--all`, using signed-sum reuse |
 | Count general `k x n -> (k + 1) x n` extensions | `count_extensions_k(rows)` |
-| Large dense polynomial products | pass `use_fft=True` to use exact NTT/CRT |
+| External dense polynomial products with modest coefficient bounds | pass `use_fft=True` to allow exact NTT/CRT |
 
 The methods are intentionally kept side by side. The signed-sum identity is
 special to the `2 x n` case, while the general `k`-row method handles broader

@@ -10,6 +10,7 @@ _NTT_SEARCH_CACHE: dict[int, int] = {}
 _NTT_MAX_PRIME = (1 << 31) - 1
 _NTT_SCHOOLBOOK_THRESHOLD = 16_384
 _NTT_MIN_POLY_LEN = 32
+_NTT_MAX_CRT_PRIMES = 8
 
 
 def get_rook_polynomial_for_cycle(k: int) -> list[int]:
@@ -197,6 +198,15 @@ def _convolve_mod(
     return a[: len(poly1) + len(poly2) - 1]
 
 
+def _estimate_crt_prime_count(coefficient_bound: int) -> int:
+    """Estimate how many 31-bit NTT primes CRT reconstruction will need."""
+    if coefficient_bound <= 0:
+        return 0
+    modulus_bits_needed = (2 * coefficient_bound).bit_length()
+    prime_bits = _NTT_MAX_PRIME.bit_length()
+    return max(1, (modulus_bits_needed + prime_bits - 1) // prime_bits)
+
+
 def multiply_polynomials_fft(poly1: list[int], poly2: list[int]) -> list[int]:
     """
     Multiply integer polynomials exactly using NTT primes and CRT.
@@ -229,6 +239,8 @@ def multiply_polynomials_fft(poly1: list[int], poly2: list[int]) -> list[int]:
     coefficient_bound = min(n1, n2) * max_abs_1 * max_abs_2
     if coefficient_bound == 0:
         return [0] * (n1 + n2 - 1)
+    if _estimate_crt_prime_count(coefficient_bound) > _NTT_MAX_CRT_PRIMES:
+        return multiply_polynomials(poly1, poly2)
 
     size = _next_power_of_two(n1 + n2 - 1)
     modulus_product = 1

@@ -6,7 +6,8 @@ from .derangements import (
     generate_random_derangement,
 )
 from .extension_counting import (
-    _count_cycle_structure_extensions_signed,
+    CycleStructureMethod,
+    count_cycle_structure_extensions,
     count_extensions,
 )
 from .general_extensions import count_extensions_k
@@ -39,28 +40,9 @@ def count_random_extensions(n: int) -> int:
     return count_extensions(random_derangement)
 
 
-def count_cycle_structure_extensions(cycle_lengths: list[int]) -> int:
-    """
-    Count extensions for a derangement defined by a given cycle structure.
-
-    This convenience function mirrors the CLI option `--c "a,b,c"` by
-    constructing a 1-indexed derangement with the specified cycle lengths and
-    returning the number of valid third rows.
-
-    Args:
-        cycle_lengths: List of cycle lengths (each >= 2). The sum is n.
-
-    Returns:
-        Number of extensions for the constructed derangement.
-
-    Raises:
-        ValueError: If the cycle_lengths include 1 (fixed points) or are invalid.
-    """
-    return _count_cycle_structure_extensions_signed(cycle_lengths)
-
-
 # Export the main functions
 __all__ = [
+    "CycleStructureMethod",
     "count_cycle_structure_extensions",
     "count_extensions",
     "count_extensions_k",

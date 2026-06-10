@@ -186,6 +186,10 @@ cython_debug/
 # Ruff stuff:
 .ruff_cache/
 
+# Generated benchmark outputs
+benchmark_results/
+benchmark_plots/
+
 # PyPI configuration file
 .pypirc
 
