@@ -6,7 +6,7 @@ they map to the implemented algorithms.
 The package has three related counting paths:
 
 1. the specialized `2 x n -> 3 x n` rook-polynomial method,
-2. the signed-sum cycle-structure method for the same `2 x n -> 3 x n`
+2. the Touchard cycle-structure method for the same `2 x n -> 3 x n`
    problem,
 3. the general `k x n -> (k + 1) x n` method based on connected components of
    the forbidden bipartite graph.
@@ -150,9 +150,9 @@ Implementation mapping:
 | `multiply_polynomials_fft(a, b)` | exact NTT/CRT product for large dense inputs |
 | `count_extensions(pi)` | decompose `pi`, multiply cycle rook polynomials, apply inclusion-exclusion |
 
-## 4. Signed/Reversed Cycle Polynomial
+## 4. Touchard/Reversed Cycle Polynomial
 
-The signed-sum method uses a different polynomial convention for the same
+The Touchard method uses a different polynomial convention for the same
 cycle data.
 
 For a cycle length `l`, define:
@@ -187,7 +187,7 @@ M_l = F(q_l).
 ```
 
 For `l >= 2`, `M_l` is the genuine extension count for a single `l`-cycle.
-The signed-sum identity also uses two formal values:
+Touchard's identity also uses two formal values:
 
 ```text
 M_0 = 2
@@ -206,7 +206,15 @@ E(l_1, ..., l_c) = F(q_{l_1}(t) q_{l_2}(t) ... q_{l_c}(t)).
 This is the same inclusion-exclusion calculation as the positive rook
 polynomial method, just expressed in reversed signed coefficients.
 
-## 5. Derivation Of The Signed-Sum Formula
+## 5. Derivation Of Touchard's Formula
+
+Historically, this identity should be attributed to Touchard's 1934 formula for
+permutations discordant with two given permutations. Touchard's notation sums
+over `2^(c-1)` sign choices with the first sign fixed; using his evenness
+convention for the one-cycle function gives the equivalent `1/2` times the sum
+over all `2^c` sign vectors below. The derivation here explains why the same
+formula follows from the package's rook-polynomial convention and how the
+implemented `M_s` values are computed.
 
 The key identity is:
 
@@ -335,7 +343,7 @@ Then the signed sum is:
 S = a - (n - a) = 2a - n.
 ```
 
-So the signed-sum formula becomes:
+So Touchard's formula becomes:
 
 ```text
 E(l_1, ..., l_c)
@@ -352,7 +360,7 @@ The implementation computes the numbers `N(a)` by subset-sum dynamic
 programming. This is the function:
 
 ```text
-latin_rectangles.extension_counting._count_cycle_structure_extensions_signed
+latin_rectangles.extension_counting._count_cycle_structure_extensions_touchard
 ```
 
 This path is especially useful when enumerating many cycle structures for the
@@ -360,10 +368,10 @@ same `n`, because all one-cycle values `M_s` are cached.
 
 Performance note:
 
-- few large cycles: the signed-sum method is often fastest,
+- few large cycles: the Touchard method is often fastest,
 - many small cycles in one isolated query: the original rook-polynomial method
   can still be faster,
-- all-cycle-type enumeration: signed-sum reuse is valuable.
+- all-cycle-type enumeration: Touchard-value reuse is valuable.
 
 ## 7. Exact NTT/CRT Polynomial Multiplication
 
@@ -481,10 +489,10 @@ are small.
 | --- | --- |
 | Count one arbitrary derangement | `count_extensions(permutation)` |
 | Count one cycle structure | `count_cycle_structure_extensions(cycle_lengths)`, using auto routing |
-| Enumerate all cycle structures for a fixed `n` | CLI `--all`, using signed-sum reuse |
+| Enumerate all cycle structures for a fixed `n` | CLI `--all`, using Touchard-value reuse |
 | Count general `k x n -> (k + 1) x n` extensions | `count_extensions_k(rows)` |
 | External dense polynomial products with modest coefficient bounds | pass `use_fft=True` to allow exact NTT/CRT |
 
-The methods are intentionally kept side by side. The signed-sum identity is
+The methods are intentionally kept side by side. Touchard's identity is
 special to the `2 x n` case, while the general `k`-row method handles broader
 inputs at the cost of exponential worst-case behavior.

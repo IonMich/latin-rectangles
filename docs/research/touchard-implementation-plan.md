@@ -1,21 +1,21 @@
-# Signed-Sum Implementation Plan
+# Touchard Implementation Plan
 
 This plan follows from the stored research note in
 `docs/research/chatgpt-5-5-extended-thinking-latin-rectangle-extension-response.md`.
-The goal is to turn the Chebyshev/signed-sum identity into a tested,
+The goal is to turn Touchard's Chebyshev/sign-sum identity into a tested,
 maintainable improvement for the existing 2-row extension counter while keeping
 the general `k -> k+1` path separate.
 
 ## Scope
 
 Implement items 1-5 first. Items 6-7 are follow-up probes and should not block
-the signed-sum work.
+the Touchard work.
 
 ## 1. Add Tests First
 
 Add focused tests before changing behavior.
 
-- Cross-check a signed-sum helper against the current rook-polynomial
+- Cross-check a Touchard helper against the current rook-polynomial
   implementation for every valid cycle structure through a modest `n`.
 - Include explicit regression cases for the formal correction terms
   `M_0 = 2` and `M_1 = -1`.
@@ -26,7 +26,7 @@ Add focused tests before changing behavior.
   equivalence tests, because the general path should continue to validate the
   2-row public behavior.
 
-## 2. Add a Signed-Sum Counting Path
+## 2. Add a Touchard Counting Path
 
 Add an internal 2-row implementation based on:
 
@@ -38,7 +38,7 @@ Use subset-sum dynamic programming over cycle lengths rather than enumerating
 all `2^c` sign vectors:
 
 ```text
-signed_sum = 2 * subset_sum - n
+touchard_index = 2 * subset_sum - n
 E(lambda) = 1/2 * sum_a count_subsets_with_sum_a(lambda) * M_|2a-n|
 ```
 
@@ -46,7 +46,7 @@ Keep the implementation exact and integer-only.
 
 ## 3. Reuse One-Cycle Counts in Cycle-Structure Enumeration
 
-Target the signed-sum path first at cycle-structure inputs and `--all`
+Target the Touchard path first at cycle-structure inputs and `--all`
 enumeration, where one-cycle values `M_s` are reused across many cycle types.
 
 - Cache `M_s = F(q_s)` values, with formal values `M_0 = 2` and `M_1 = -1`.
@@ -74,12 +74,12 @@ research note's signed/reversed cycle polynomials `q_l(t)`.
   functional.
 - State that `M_0` and `M_1` are formal correction terms, not genuine Latin
   extension counts.
-- Add concise comments near any signed-sum helper so the identity is auditable
+- Add concise comments near any Touchard helper so the identity is auditable
   from code.
 
 ## 6. Preserve the General `k -> k+1` Boundary
 
-Do not replace `general_extensions.py` with the signed-sum formula. The
+Do not replace `general_extensions.py` with Touchard's formula. The
 Chebyshev identity is special to the 2-row case, where forbidden components are
 cycle graphs.
 
@@ -87,6 +87,6 @@ Use the general method only as a consistency check for 2-row inputs.
 
 ## 7. Consider Input Validation Hardening
 
-After the signed-sum work, consider adding full permutation validation to
+After the Touchard work, consider adding full permutation validation to
 `count_extensions`. It currently rejects fixed points but does not fully verify
 that the input is a valid 1-indexed permutation.

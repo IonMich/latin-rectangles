@@ -12,7 +12,7 @@ from .rook_polynomials import (
     multiply_polynomials_fft,
 )
 
-CycleStructureMethod = Literal["auto", "signed", "rook", "rook_ntt"]
+CycleStructureMethod = Literal["auto", "touchard", "rook", "rook_ntt"]
 
 
 @dataclass(frozen=True)
@@ -26,7 +26,7 @@ class _OneCycleCacheInfo:
 
 
 class _OneCycleExtensionCounter:
-    """Callable cache for the formal one-cycle signed-sum values M_s."""
+    """Callable cache for the formal one-cycle Touchard values M_s."""
 
     def __init__(self) -> None:
         self._cache: dict[int, int] = {}
@@ -89,7 +89,7 @@ def _validate_cycle_lengths(cycle_lengths: tuple[int, ...]) -> None:
         raise ValueError("Cycle structure parts must be at least 2")
 
 
-def _signed_subset_counts(cycle_lengths: tuple[int, ...]) -> list[int]:
+def _touchard_subset_counts(cycle_lengths: tuple[int, ...]) -> list[int]:
     """Return subset-sum multiplicities for cycle lengths."""
     n = sum(cycle_lengths)
     subset_counts = [0] * (n + 1)
@@ -106,25 +106,26 @@ def _signed_subset_counts(cycle_lengths: tuple[int, ...]) -> list[int]:
     return subset_counts
 
 
-def _signed_m_values(cycle_lengths: tuple[int, ...]) -> set[int]:
-    """Return the formal one-cycle indices M_s needed by signed-sum."""
+def _touchard_m_values(cycle_lengths: tuple[int, ...]) -> set[int]:
+    """Return the formal one-cycle indices M_s needed by Touchard's formula."""
     n = sum(cycle_lengths)
     return {
         abs(2 * subset_sum - n)
-        for subset_sum, multiplicity in enumerate(_signed_subset_counts(cycle_lengths))
+        for subset_sum, multiplicity in enumerate(_touchard_subset_counts(cycle_lengths))
         if multiplicity
     }
 
 
-def _count_cycle_structure_extensions_signed(cycle_lengths: list[int]) -> int:
-    """Count 2-row extensions from cycle lengths via signed subset sums.
+def _count_cycle_structure_extensions_touchard(cycle_lengths: list[int]) -> int:
+    """Count 2-row extensions from cycle lengths via Touchard's formula.
 
     The repo's rook polynomials store positive matching numbers r_j. The
     research note instead uses signed, reversed cycle polynomials
     q_l(t) = sum_j (-1)^j r_j t^(l-j), then applies F(t^d) = d!. For one
     cycle this gives M_l = F(q_l), exactly the inclusion-exclusion value above.
 
-    Chebyshev multiplication gives
+    This is Touchard's 1934 discordant-permutation formula in the h=0
+    Latin-rectangle specialization. Chebyshev multiplication rederives
         product_l q_l = 1/2 * sum_epsilon q_|sum epsilon_l l|,
     so the full count is the same average over formal one-cycle values M_s. We
     compute the sign-vector multiplicities with subset-sum DP: choosing the
@@ -134,17 +135,17 @@ def _count_cycle_structure_extensions_signed(cycle_lengths: list[int]) -> int:
     _validate_cycle_lengths(lengths)
 
     n = sum(lengths)
-    signed_total = 0
-    for subset_sum, multiplicity in enumerate(_signed_subset_counts(lengths)):
+    touchard_total = 0
+    for subset_sum, multiplicity in enumerate(_touchard_subset_counts(lengths)):
         if multiplicity:
-            signed_total += multiplicity * _one_cycle_extension_count(
+            touchard_total += multiplicity * _one_cycle_extension_count(
                 abs(2 * subset_sum - n)
             )
 
-    # Complementary subsets are paired by the 1/2 in the Chebyshev identity.
-    if signed_total % 2 != 0:
-        raise AssertionError("Signed-sum total should be even")
-    return signed_total // 2
+    # Complementary subsets are paired by the 1/2 in Touchard's all-sign form.
+    if touchard_total % 2 != 0:
+        raise AssertionError("Touchard total should be even")
+    return touchard_total // 2
 
 
 def _count_cycle_structure_extensions_rook(
@@ -166,22 +167,22 @@ def _count_cycle_structure_extensions_rook(
 
 def _choose_cycle_structure_method(
     cycle_lengths: tuple[int, ...],
-) -> Literal["signed", "rook"]:
+) -> Literal["touchard", "rook"]:
     """Choose the default exact method for a cycle-structure request.
 
-    Signed-sum is excellent when its required one-cycle values are already
+    Touchard is excellent when its required one-cycle values are already
     cached, or when only a few new values are needed. Cold dense high-n cycle
     types can ask for hundreds or thousands of new M_s values, and the
     schoolbook rook product is then a better default.
     """
-    m_values = _signed_m_values(cycle_lengths)
+    m_values = _touchard_m_values(cycle_lengths)
     missing_values = _one_cycle_extension_count.missing_values(m_values)
     if not missing_values:
-        return "signed"
+        return "touchard"
     if len(missing_values) <= 8:
-        return "signed"
+        return "touchard"
     if sum(cycle_lengths) <= 256:
-        return "signed"
+        return "touchard"
     return "rook"
 
 
@@ -189,8 +190,8 @@ def _count_cycle_structure_extensions_auto(cycle_lengths: list[int]) -> int:
     """Count cycle-structure extensions using the routed default method."""
     lengths = tuple(cycle_lengths)
     _validate_cycle_lengths(lengths)
-    if _choose_cycle_structure_method(lengths) == "signed":
-        return _count_cycle_structure_extensions_signed(cycle_lengths)
+    if _choose_cycle_structure_method(lengths) == "touchard":
+        return _count_cycle_structure_extensions_touchard(cycle_lengths)
     return _count_cycle_structure_extensions_rook(cycle_lengths, use_fft=False)
 
 
@@ -200,8 +201,8 @@ def count_cycle_structure_extensions(
     """Count extensions for a derangement defined by cycle lengths."""
     if method == "auto":
         return _count_cycle_structure_extensions_auto(cycle_lengths)
-    if method == "signed":
-        return _count_cycle_structure_extensions_signed(cycle_lengths)
+    if method == "touchard":
+        return _count_cycle_structure_extensions_touchard(cycle_lengths)
     if method == "rook":
         return _count_cycle_structure_extensions_rook(cycle_lengths, use_fft=False)
     if method == "rook_ntt":

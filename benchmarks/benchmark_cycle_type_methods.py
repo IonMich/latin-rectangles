@@ -68,8 +68,8 @@ class BenchmarkCase:
     total_cycle_types_for_n: int | None = None
 
 
-def _count_signed_sum(cycle_lengths: list[int]) -> int:
-    return count_cycle_structure_extensions(cycle_lengths, method="signed")
+def _count_touchard(cycle_lengths: list[int]) -> int:
+    return count_cycle_structure_extensions(cycle_lengths, method="touchard")
 
 
 def _count_cycle_auto(cycle_lengths: list[int]) -> int:
@@ -86,7 +86,7 @@ def _count_rook_ntt(cycle_lengths: list[int]) -> int:
 
 METHODS: dict[str, Method] = {
     "cycle_auto": Method("cycle_auto", _count_cycle_auto),
-    "signed_sum": Method("signed_sum", _count_signed_sum),
+    "touchard": Method("touchard", _count_touchard),
     "rook_schoolbook": Method("rook_schoolbook", _count_rook_schoolbook),
     "rook_ntt": Method("rook_ntt", _count_rook_ntt),
 }
@@ -571,8 +571,8 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--methods",
         type=parse_methods,
-        default=parse_methods("signed_sum,rook_schoolbook,rook_ntt"),
-        help="Comma-separated methods: cycle_auto, signed_sum, rook_schoolbook, rook_ntt.",
+        default=parse_methods("touchard,rook_schoolbook,rook_ntt"),
+        help="Comma-separated methods: cycle_auto, touchard, rook_schoolbook, rook_ntt.",
     )
     parser.add_argument("--repeats", type=int, default=3)
     parser.add_argument(

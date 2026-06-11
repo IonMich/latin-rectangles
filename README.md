@@ -22,7 +22,7 @@ where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the pro
 
 ### Key Features
 
-- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available when CRT reconstruction is not too expensive and a cached signed-sum formula for repeated cycle-structure queries
+- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available when CRT reconstruction is not too expensive and a cached Touchard formula for repeated cycle-structure queries
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
 - **Generalization to k→k+1**: Exact counting for extending k×n to (k+1)×n via component-wise rook/matching polynomials; exponential in the worst case (as expected from #P-completeness), but fast when orbits/components are small
 
@@ -164,7 +164,7 @@ print(f"Extend 3×4 → 4×4: {extensions_k} ways")
 ### Mathematical Foundation
 
 The algorithms are derived in detail in [docs/methods.md](docs/methods.md),
-including notation, the rook-polynomial formula, the signed-sum identity, the
+including notation, the rook-polynomial formula, the Touchard identity, the
 exact NTT/CRT convolution path, and the general `k x n -> (k + 1) x n` method.
 The benchmark and plotting workflow is documented in
 [docs/benchmarks.md](docs/benchmarks.md).
@@ -177,7 +177,7 @@ polynomial theory**:
 3. **Rook Polynomials**: Compute rook polynomial for each cycle structure
 4. **Polynomial Multiplication**: Combine rook polynomials to get the final count
 
-For direct cycle-structure inputs, the implementation also uses a signed-sum
+For direct cycle-structure inputs, the implementation also uses Touchard's
 identity. If the cycle lengths are `l_1, ..., l_c`, then
 
 ```text
@@ -188,8 +188,14 @@ where `M_s` is the one-cycle inclusion-exclusion value. The values `M_0 = 2`
 and `M_1 = -1` are formal correction terms from the Chebyshev polynomial
 identity; they are not extension counts for actual 0- or 1-cycles.
 
+This is Touchard's 1934 discordant-permutation formula specialized to the
+no-fixed-point relative cycle structure of a normalized `2 x n` Latin rectangle.
+The implementation derives the same expression from the
+rook-polynomial/forbidden-graph view and evaluates it with cached one-cycle
+values.
+
 Internally, the rook polynomial for one `l`-cycle stores positive matching
-numbers `r_j`, while the signed-sum proof uses the reversed signed polynomial
+numbers `r_j`, while the Touchard proof uses the reversed signed polynomial
 `q_l(t) = sum_j (-1)^j r_j t^(l-j)` and the linear functional `F(t^d) = d!`.
 For `l >= 2`, `M_l = F(q_l)` is exactly the same inclusion-exclusion count
 computed from the rook polynomial.
@@ -198,7 +204,7 @@ computed from the rook polynomial.
 
 - Per derangement (fixed 2×n Latin rectangle): the default method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). The optional `use_fft=True` path uses exact NTT/CRT convolution for large dense polynomial products and falls back to schoolbook multiplication for small products, skinny products, or products whose coefficient sizes would require too many CRT primes.
 
-- Repeated cycle-structure queries: the signed-sum method reuses cached
+- Repeated cycle-structure queries: the Touchard method reuses cached
   one-cycle values `M_s`, which is especially useful when enumerating all cycle
   structures for a fixed `n`.
 
@@ -233,9 +239,9 @@ floating-point convolution.
 
 #### `count_cycle_structure_extensions(cycle_lengths: list[int], method: str = "auto") -> int`
 
-The default `method="auto"` uses the signed-sum formula when its needed
+The default `method="auto"` uses the Touchard formula when its needed
 one-cycle values are cached or few, and falls back to the rook product for cold
-dense high-`n` cycle types. Explicit methods are `"signed"`, `"rook"`, and
+dense high-`n` cycle types. Explicit methods are `"touchard"`, `"rook"`, and
 `"rook_ntt"`.
 
 #### `count_random_extensions(n: int) -> int`
@@ -280,7 +286,7 @@ p_8_cycle = [0, 2, 3, 4, 5, 6, 7, 8, 1]
 print(f"8-cycle: {count_extensions(p_8_cycle):,} extensions")
 # Output: 8-cycle: 4,738 extensions
 
-# Example 2: Two 4-cycles  
+# Example 2: Two 4-cycles
 p_4_4 = [0, 2, 3, 4, 1, 6, 7, 8, 5]
 print(f"4,4-cycles: {count_extensions(p_4_4):,} extensions")
 # Output: 4,4-cycles: 4,740 extensions

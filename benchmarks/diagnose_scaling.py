@@ -2,7 +2,7 @@
 """Diagnose scaling behavior of the 2-row extension-counting methods.
 
 This script is intentionally more invasive than the benchmark runner: it
-decomposes the signed-sum and rook-polynomial methods into internal work units
+decomposes the Touchard and rook-polynomial methods into internal work units
 so slow cases can be explained before choosing implementation changes.
 """
 
@@ -84,7 +84,7 @@ ROOK_STRATEGIES: dict[str, RookStrategy] = {
 }
 
 
-SIGNED_SUM_COLUMNS = [
+TOUCHARD_COLUMNS = [
     "family",
     "n",
     "cycle_count",
@@ -208,15 +208,15 @@ def base_case_row(case: DiagnosticCase) -> dict[str, str]:
     }
 
 
-def signed_sum_diagnostics(
+def touchard_diagnostics(
     case: DiagnosticCase,
     *,
     mode: str,
     timeout_seconds: float,
 ) -> dict[str, str]:
-    """Return one diagnostic row for the signed-sum method."""
+    """Return one diagnostic row for the Touchard method."""
     if mode not in {"cold", "warm"}:
-        raise ValueError(f"Unknown signed-sum mode {mode!r}")
+        raise ValueError(f"Unknown Touchard mode {mode!r}")
 
     lengths = tuple(case.cycle_lengths)
     _validate_cycle_lengths(lengths)
@@ -260,17 +260,17 @@ def signed_sum_diagnostics(
 
             cache_before = _one_cycle_extension_count.cache_info()
             accumulation_started = time.perf_counter()
-            signed_total = 0
+            touchard_total = 0
             for subset_sum, multiplicity in reachable:
-                signed_total += multiplicity * _one_cycle_extension_count(
+                touchard_total += multiplicity * _one_cycle_extension_count(
                     abs(2 * subset_sum - case.n)
                 )
             accumulation_seconds = time.perf_counter() - accumulation_started
             cache_after = _one_cycle_extension_count.cache_info()
 
-            if signed_total % 2 != 0:
-                raise AssertionError("Signed-sum total should be even")
-            result = signed_total // 2
+            if touchard_total % 2 != 0:
+                raise AssertionError("Touchard total should be even")
+            result = touchard_total // 2
 
             row.update(
                 {
@@ -296,7 +296,7 @@ def signed_sum_diagnostics(
             }
         )
 
-    for column in SIGNED_SUM_COLUMNS:
+    for column in TOUCHARD_COLUMNS:
         row.setdefault(column, "")
     return row
 
@@ -606,10 +606,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="Comma-separated named cycle families.",
     )
     parser.add_argument(
-        "--signed-modes",
+        "--touchard-modes",
         type=parse_csv_names,
         default=parse_csv_names("cold,warm"),
-        help="Comma-separated signed-sum modes: cold,warm.",
+        help="Comma-separated Touchard modes: cold,warm.",
     )
     parser.add_argument(
         "--rook-strategies",
@@ -623,7 +623,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         "--timeout-seconds",
         type=float,
         default=30.0,
-        help="Per signed-sum or multiplication-step timeout.",
+        help="Per Touchard or multiplication-step timeout.",
     )
     parser.add_argument(
         "--output-dir",
@@ -638,7 +638,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     """Run diagnostics and write CSV reports."""
     args = parse_args(argv)
     cases = selected_cases(args.ns, args.families)
-    signed_rows: list[dict[str, str]] = []
+    touchard_rows: list[dict[str, str]] = []
     rook_summary_rows: list[dict[str, str]] = []
     rook_step_rows: list[dict[str, str]] = []
 
@@ -651,14 +651,14 @@ def main(argv: Sequence[str] | None = None) -> None:
             f"cycle_type={format_cycle_type_preview(case.cycle_lengths)}",
             flush=True,
         )
-        for mode in args.signed_modes:
-            print(f"  signed_sum mode={mode}", flush=True)
-            row = signed_sum_diagnostics(
+        for mode in args.touchard_modes:
+            print(f"  touchard mode={mode}", flush=True)
+            row = touchard_diagnostics(
                 case,
                 mode=mode,
                 timeout_seconds=args.timeout_seconds,
             )
-            signed_rows.append(row)
+            touchard_rows.append(row)
             print(
                 f"    status={row['status']} total={row['total_seconds']}s "
                 f"reachable={row['reachable_subset_sums']} "
@@ -684,9 +684,9 @@ def main(argv: Sequence[str] | None = None) -> None:
             )
 
     write_csv(
-        args.output_dir / "signed_sum_diagnostics.csv",
-        SIGNED_SUM_COLUMNS,
-        signed_rows,
+        args.output_dir / "touchard_diagnostics.csv",
+        TOUCHARD_COLUMNS,
+        touchard_rows,
     )
     write_csv(
         args.output_dir / "rook_strategy_summary.csv",

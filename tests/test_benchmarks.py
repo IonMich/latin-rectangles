@@ -1,5 +1,6 @@
 """Tests for benchmark and plotting helpers."""
 
+import argparse
 import time
 from pathlib import Path
 
@@ -56,7 +57,7 @@ def test_all_named_cycle_families_have_valid_cycle_types() -> None:
 def test_benchmark_writes_agreement_checked_csvs(tmp_path: Path) -> None:
     """Small benchmarks should write rows after checking method equality."""
     methods = [
-        bench.METHODS["signed_sum"],
+        bench.METHODS["touchard"],
         bench.METHODS["rook_schoolbook"],
         bench.METHODS["rook_ntt"],
     ]
@@ -87,15 +88,21 @@ def test_benchmark_writes_agreement_checked_csvs(tmp_path: Path) -> None:
 
     assert family_count == 6
     assert all_cycle_count == bench.count_cycle_types(6) * len(methods)
-    assert "signed_sum" in family_path.read_text()
+    assert "touchard" in family_path.read_text()
     assert "rook_ntt" in all_cycle_path.read_text()
+
+
+def test_old_signed_benchmark_method_name_is_not_supported() -> None:
+    """Benchmark method names should use the Touchard naming only."""
+    with pytest.raises(argparse.ArgumentTypeError, match="Unknown method"):
+        bench.parse_methods("signed_sum")
 
 
 def test_all_cycle_type_guard_blocks_unintended_large_runs() -> None:
     """The exhaustive suite should refuse unexpectedly large cycle-type counts."""
     rows = bench.all_cycle_type_rows(
         [30],
-        [bench.METHODS["signed_sum"]],
+        [bench.METHODS["touchard"]],
         repeats=1,
         track_memory=False,
         max_cycle_types=10,
@@ -129,15 +136,15 @@ def test_timeout_writes_timeout_row() -> None:
     assert rows[0]["time_seconds_median"] == ""
 
 
-def test_signed_sum_diagnostics_reports_cache_misses() -> None:
-    """Signed-sum diagnostics should expose subset and M-cache work."""
+def test_touchard_diagnostics_reports_cache_misses() -> None:
+    """Touchard diagnostics should expose subset and M-cache work."""
     case = diagnose.DiagnosticCase("known", 8, [2, 2, 4])
-    cold = diagnose.signed_sum_diagnostics(
+    cold = diagnose.touchard_diagnostics(
         case,
         mode="cold",
         timeout_seconds=1,
     )
-    warm = diagnose.signed_sum_diagnostics(
+    warm = diagnose.touchard_diagnostics(
         case,
         mode="warm",
         timeout_seconds=1,
@@ -192,7 +199,7 @@ def test_rook_step_timeout_is_recorded() -> None:
 def test_plotter_creates_separate_svg_files(tmp_path: Path) -> None:
     """The plotter should produce standalone SVGs from benchmark CSVs."""
     methods = [
-        bench.METHODS["signed_sum"],
+        bench.METHODS["touchard"],
         bench.METHODS["rook_schoolbook"],
     ]
     input_dir = tmp_path / "results"

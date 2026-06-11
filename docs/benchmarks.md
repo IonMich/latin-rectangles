@@ -3,9 +3,9 @@
 This repository includes a CSV-first benchmark workflow for the specialized
 `2 x n -> 3 x n` methods:
 
-- `signed_sum`: `count_cycle_structure_extensions`, using the signed subset-sum
-  formula on cycle lengths.
-- `cycle_auto`: the public cycle-structure router, which chooses signed-sum or
+- `touchard`: `count_cycle_structure_extensions`, using Touchard's formula on
+  cycle lengths.
+- `cycle_auto`: the public cycle-structure router, which chooses Touchard or
   rook schoolbook depending on cache state and cycle-type density.
 - `rook_schoolbook`: `count_extensions(..., use_fft=False)`, using exact
   schoolbook polynomial products.
@@ -84,7 +84,7 @@ Use guarded runs when comparing all methods at high `n`:
 uv run benchmarks/benchmark_cycle_type_methods.py \
   --suite families \
   --family-ns 128,256,512,1024,2048 \
-  --methods cycle_auto,signed_sum,rook_schoolbook,rook_ntt \
+  --methods cycle_auto,touchard,rook_schoolbook,rook_ntt \
   --repeats 3 \
   --timeout-seconds 120 \
   --progress method \
@@ -101,7 +101,7 @@ Exhaustive all-cycle-type run for selected fixed `n`:
 uv run benchmarks/benchmark_cycle_type_methods.py \
   --suite all-cycle-types \
   --all-cycle-ns 30,40,50 \
-  --methods cycle_auto,signed_sum,rook_schoolbook,rook_ntt \
+  --methods cycle_auto,touchard,rook_schoolbook,rook_ntt \
   --repeats 3 \
   --max-cycle-types 50000 \
   --output-dir benchmark_results/scaling_all_types
@@ -162,7 +162,7 @@ digits. Equality is still checked in memory before rows are written.
 Use `benchmarks/diagnose_scaling.py` when a benchmark run looks stuck or when a
 method behaves contrary to expectation. It writes three CSV files:
 
-- `signed_sum_diagnostics.csv`
+- `touchard_diagnostics.csv`
 - `rook_strategy_summary.csv`
 - `rook_multiply_steps.csv`
 
@@ -172,13 +172,13 @@ Example:
 uv run benchmarks/diagnose_scaling.py \
   --ns 2048 \
   --families mixed_ladder,mostly_16_cycles,two_equal_cycles,four_equal_cycles \
-  --signed-modes cold,warm \
+  --touchard-modes cold,warm \
   --rook-strategies schoolbook_sequential,ntt_sequential,ntt_tree \
   --timeout-seconds 10 \
   --output-dir benchmark_results/diagnostics_probe
 ```
 
-The signed-sum diagnostics report:
+The Touchard diagnostics report:
 
 - number of reachable subset sums
 - number of distinct `M_s` one-cycle values requested
@@ -200,7 +200,7 @@ The first diagnostic probe explains why the advanced paths did not dominate on
 `mixed_ladder`.
 
 For `mixed_ladder` at `n=2048`, the cycle lengths have gcd `1` and the subset
-sums are essentially dense: 2047 reachable subset sums. A cold signed-sum run
+sums are essentially dense: 2047 reachable subset sums. A cold Touchard run
 therefore asks for many high-index one-cycle values `M_s`. Individual cold
 `M_s` computations become nontrivial at this scale:
 
@@ -211,7 +211,7 @@ therefore asks for many high-index one-cycle values `M_s`. Individual cold
 | 1536 | about 0.245 s |
 | 2048 | about 0.547 s |
 
-So signed-sum is best interpreted as a warm-cache or repeated-query method for
+So Touchard is best interpreted as a warm-cache or repeated-query method for
 large dense cycle-type families. It can still be excellent when the reachable
 `M_s` set is small, e.g. balanced large cycles.
 
@@ -235,7 +235,7 @@ This led to two routing changes:
 - `multiply_polynomials_fft` now estimates the number of CRT primes needed and
   falls back to schoolbook multiplication when that estimate is above its prime
   budget.
-- `count_cycle_structure_extensions(..., method="auto")` uses signed-sum when
+- `count_cycle_structure_extensions(..., method="auto")` uses Touchard when
   the needed `M_s` values are already cached or few, but routes cold dense
   high-`n` cycle types to the rook-polynomial product.
 
