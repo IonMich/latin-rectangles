@@ -25,10 +25,9 @@
 - Do not use local PyPI tokens for normal releases. Local publishing is only an
   emergency fallback after the GitHub release path is unavailable or broken.
 
-## One-Time Trusted Publishing Setup
+## Trusted Publishing Setup
 
-PyPI trusted publishing must be configured once before the release workflow can
-publish:
+PyPI trusted publishing is configured for this project:
 
 - PyPI project: `latin-rectangles`
 - GitHub owner: `IonMich`
@@ -36,6 +35,6 @@ publish:
 - Workflow filename: `release.yml`
 - GitHub environment: `pypi`
 
-Create the matching GitHub repository environment named `pypi` under repository
-settings. Add approval rules there if releases should require manual approval
-before PyPI upload.
+The matching GitHub repository environment named `pypi` exists. It does not
+need GitHub environment secrets or variables for PyPI publishing. Add approval
+rules there only if releases should require manual approval before PyPI upload.

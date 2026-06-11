@@ -38,9 +38,9 @@ uv run latin-rectangles --n 42
 Releases are published by GitHub Actions from version tags. Do not publish to
 PyPI from a local machine during the normal release path.
 
-### One-Time Setup
+### Trusted Publishing Setup
 
-Configure PyPI trusted publishing for this project:
+PyPI trusted publishing is configured for this project:
 
 - PyPI project: `latin-rectangles`
 - GitHub owner: `IonMich`
@@ -48,9 +48,9 @@ Configure PyPI trusted publishing for this project:
 - Workflow filename: `release.yml`
 - GitHub environment: `pypi`
 
-Also create a GitHub repository environment named `pypi` under repository
-settings. Add required reviewers there if PyPI deployment should require manual
-approval.
+The GitHub repository environment named `pypi` does not need environment
+secrets or variables for PyPI publishing. Add required reviewers there only if
+PyPI deployment should require manual approval.
 
 ### Release Steps
 
