@@ -16,6 +16,18 @@ latin-rectangles = "latin_rectangles.__main__:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.build]
+exclude = [
+    "/.pytest_cache/",
+    "/.ruff_cache/",
+    "/.vscode/",
+    "/benchmark_plots/",
+    "/benchmark_results/",
+    "/dist/",
+    "/htmlcov/",
+    "/literature_sources/",
+]
+
 [dependency-groups]
 dev = [
     "mypy>=1.16.0",
