@@ -26,8 +26,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from latin_rectangles import (
-    count_cycle_structure_extensions,
-    count_extensions,
+    count_extensions_from_cycle_type,
+    count_extensions_from_derangement,
     create_cycle_structure,
 )
 
@@ -69,19 +69,25 @@ class BenchmarkCase:
 
 
 def _count_touchard(cycle_lengths: list[int]) -> int:
-    return count_cycle_structure_extensions(cycle_lengths, method="touchard")
+    return count_extensions_from_cycle_type(cycle_lengths, method="touchard")
 
 
 def _count_cycle_auto(cycle_lengths: list[int]) -> int:
-    return count_cycle_structure_extensions(cycle_lengths, method="auto")
+    return count_extensions_from_cycle_type(cycle_lengths, method="auto")
 
 
 def _count_rook_schoolbook(cycle_lengths: list[int]) -> int:
-    return count_extensions(create_cycle_structure(cycle_lengths), use_fft=False)
+    return count_extensions_from_derangement(
+        create_cycle_structure(cycle_lengths),
+        use_fft=False,
+    )
 
 
 def _count_rook_ntt(cycle_lengths: list[int]) -> int:
-    return count_extensions(create_cycle_structure(cycle_lengths), use_fft=True)
+    return count_extensions_from_derangement(
+        create_cycle_structure(cycle_lengths),
+        use_fft=True,
+    )
 
 
 METHODS: dict[str, Method] = {

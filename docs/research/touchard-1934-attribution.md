@@ -100,7 +100,7 @@ E(l_1, ..., l_c)
 ```
 
 This is the Touchard formula implemented by
-`count_cycle_structure_extensions(..., method="touchard")`.
+`count_extensions_from_cycle_type(..., method="touchard")`.
 
 The formal endpoint values are also aligned with Touchard's symbolic extension
 of the one-cycle function, not an independent new correction. Touchard defines

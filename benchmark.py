@@ -15,7 +15,7 @@ import tracemalloc
 from dataclasses import dataclass
 
 from latin_rectangles import (
-    count_extensions,
+    count_extensions_from_derangement,
     find_cycle_decomposition,
     generate_random_derangement,
 )
@@ -70,7 +70,7 @@ class LatinRectangleBenchmark:
         start_time = time.perf_counter()
 
         # Run the computation
-        result = count_extensions(permutation)
+        result = count_extensions_from_derangement(permutation)
 
         # Stop timing and get memory stats
         end_time = time.perf_counter()
