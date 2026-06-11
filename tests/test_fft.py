@@ -3,7 +3,10 @@
 import random
 
 import latin_rectangles.rook_polynomials as rook_polynomials
-from latin_rectangles import count_extensions, generate_random_derangement
+from latin_rectangles import (
+    count_extensions_from_derangement,
+    generate_random_derangement,
+)
 from latin_rectangles.derangements import create_cycle_structure
 from latin_rectangles.rook_polynomials import (
     _NTT_MAX_CRT_PRIMES,
@@ -57,22 +60,22 @@ def test_count_extensions_fft_equals_naive() -> None:
     for n in [3, 4, 5, 6, 8]:
         random.seed(123 + n)
         p = generate_random_derangement(n)
-        naive = count_extensions(p, use_fft=False)
-        fast = count_extensions(p, use_fft=True)
+        naive = count_extensions_from_derangement(p, use_fft=False)
+        fast = count_extensions_from_derangement(p, use_fft=True)
         assert naive == fast
 
 
 def test_count_extensions_fft_regression_all_2_cycles_n_40() -> None:
     """This input exposed floating FFT rounding errors before exact NTT/CRT."""
     p = create_cycle_structure([2] * 20)
-    naive = count_extensions(p, use_fft=False)
-    fast = count_extensions(p, use_fft=True)
+    naive = count_extensions_from_derangement(p, use_fft=False)
+    fast = count_extensions_from_derangement(p, use_fft=True)
     assert fast == naive
 
 
 def test_count_extensions_fft_two_large_cycles() -> None:
     """Force transform multiplication inside the rook-product extension path."""
     p = create_cycle_structure([200, 200])
-    naive = count_extensions(p, use_fft=False)
-    fast = count_extensions(p, use_fft=True)
+    naive = count_extensions_from_derangement(p, use_fft=False)
+    fast = count_extensions_from_derangement(p, use_fft=True)
     assert fast == naive

@@ -1,7 +1,8 @@
-"""General k->k+1 extension counting for Latin rectangles.
+"""General extension counting for Latin rectangles.
 
-This module implements an exact counting algorithm for extending a k x n Latin
-rectangle to a (k+1) x n, given the existing k rows as permutations sigma1..sigmak.
+This module implements exact counting algorithms for extending a k x n Latin
+rectangle by one or more rows, given the existing k rows as permutations
+sigma1..sigmak.
 
 We assume the first row can be standardized to the identity by simultaneous
 conjugation (this preserves the count). The number of valid next rows equals
@@ -18,7 +19,9 @@ component's matching polynomial with a branching DP.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from functools import cache
+from itertools import permutations
 
 from .rook_polynomials import multiply_polynomials, multiply_polynomials_fft
 
@@ -29,6 +32,40 @@ def _is_identity_row(row: list[int]) -> bool:
     if n < 0:
         return False
     return all(row[i] == i for i in range(1, n + 1))
+
+
+def _validate_rows_to_add(rows_to_add: int) -> None:
+    if rows_to_add < 0:
+        raise ValueError("rows_to_add must be non-negative")
+
+
+def _validate_permutation_row(row: list[int]) -> int:
+    """Validate a 1-indexed permutation row and return n."""
+    n = len(row) - 1
+    if n < 0 or not row or row[0] != 0:
+        raise ValueError("Rows must be 1-indexed permutations with row[0] == 0")
+    if set(row[1:]) != set(range(1, n + 1)):
+        raise ValueError("Rows must be valid permutations of 1..n")
+    return n
+
+
+def _validate_latin_rows(rows: list[list[int]]) -> int:
+    """Validate rows as a 1-indexed Latin rectangle and return n."""
+    if not rows:
+        raise ValueError("Provide at least one row")
+
+    n = _validate_permutation_row(rows[0])
+    for row in rows[1:]:
+        if len(row) != n + 1:
+            raise ValueError("All rows must have the same length")
+        _validate_permutation_row(row)
+
+    for column in range(1, n + 1):
+        symbols = [row[column] for row in rows]
+        if len(set(symbols)) != len(symbols):
+            raise ValueError("Rows must form a Latin rectangle")
+
+    return n
 
 
 def _invert_perm(p: list[int]) -> list[int]:
@@ -174,8 +211,24 @@ def _derangement_number(n: int) -> int:
     return prev1
 
 
-def count_extensions_k(rows: list[list[int]], *, use_fft: bool = False) -> int:
-    """Count extensions from k x n to (k+1) x n given k rows (as permutations).
+def _iter_valid_next_rows(rows: list[list[int]]) -> Iterator[list[int]]:
+    """Yield all valid next rows extending the explicit Latin rectangle."""
+    n = _validate_latin_rows(rows)
+    used_by_column: list[set[int]] = [set() for _ in range(n + 1)]
+    for row in rows:
+        for column in range(1, n + 1):
+            used_by_column[column].add(row[column])
+
+    for candidate in permutations(range(1, n + 1)):
+        if all(
+            candidate[column - 1] not in used_by_column[column]
+            for column in range(1, n + 1)
+        ):
+            yield [0, *candidate]
+
+
+def count_next_row_extensions(rows: list[list[int]], *, use_fft: bool = False) -> int:
+    """Count extensions from k x n to (k+1) x n given k rows.
 
     Args:
         rows: List of k permutations, each a 1-indexed list of length n+1.
@@ -194,14 +247,10 @@ def count_extensions_k(rows: list[list[int]], *, use_fft: bool = False) -> int:
         - use_fft=True uses exact transform-based multiplication, not the old
           floating-point convolution path.
     """
-    if not rows:
-        raise ValueError("Provide at least one row (the first row)")
+    n = _validate_latin_rows(rows)
     k = len(rows)
-    n = len(rows[0]) - 1
     if n <= 0:
         return 1  # empty permutation → exactly one empty extension
-    if any(len(r) != n + 1 for r in rows):
-        raise ValueError("All rows must have the same length (1-indexed permutations)")
     if k == 1:
         return _derangement_number(n)
 
@@ -248,4 +297,41 @@ def count_extensions_k(rows: list[list[int]], *, use_fft: bool = False) -> int:
     return ans
 
 
-__all__ = ["count_extensions_k"]
+def count_extensions(
+    rows: list[list[int]], *, rows_to_add: int = 1, use_fft: bool = False
+) -> int:
+    """Count ordered extensions by adding ``rows_to_add`` rows to ``rows``.
+
+    Args:
+        rows: Existing Latin rectangle rows as 1-indexed permutations.
+        rows_to_add: Number of further rows to add. ``0`` returns ``1``.
+        use_fft: Use exact NTT/CRT convolution for one-row subproblems.
+
+    Returns:
+        The number of ordered ways to add the requested rows.
+
+    Notes:
+        The ``rows_to_add=1`` path uses the component rook/matching-polynomial
+        counter. Larger values use direct recursion over valid next rows, which
+        is intended for small-n exact work and regression oracles.
+    """
+    _validate_rows_to_add(rows_to_add)
+    n = _validate_latin_rows(rows)
+    if rows_to_add == 0:
+        return 1
+    if n > 0 and len(rows) + rows_to_add > n:
+        return 0
+    if rows_to_add == 1:
+        return count_next_row_extensions(rows, use_fft=use_fft)
+
+    total = 0
+    for next_row in _iter_valid_next_rows(rows):
+        total += count_extensions(
+            [*rows, next_row],
+            rows_to_add=rows_to_add - 1,
+            use_fft=use_fft,
+        )
+    return total
+
+
+__all__ = ["count_extensions", "count_next_row_extensions"]

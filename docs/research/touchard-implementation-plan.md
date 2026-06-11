@@ -22,7 +22,7 @@ Add focused tests before changing behavior.
 - Preserve the examples from the research note:
   - `E(3,4) = M_7 + M_1 = 578`
   - `E(2,2,2,2) = M_8 + 4M_4 + 3M_0 = 4752`
-- Keep the `count_extensions_k([identity, p]) == count_extensions(p)`
+- Keep the `count_extensions([identity, p]) == count_extensions_from_derangement(p)`
   equivalence tests, because the general path should continue to validate the
   2-row public behavior.
 

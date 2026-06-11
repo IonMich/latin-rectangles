@@ -19,7 +19,7 @@ def test_cli_random_derangement(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert "Generated Random Derangement for n=4" in out
     assert "Cycle structure:" in out
-    assert "Number of extensions:" in out
+    assert "Number of extensions after adding 1 row:" in out
 
 
 def test_cli_specific_cycle(capsys: pytest.CaptureFixture[str]) -> None:
@@ -27,7 +27,17 @@ def test_cli_specific_cycle(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert "Specific Cycle Structure for n=4" in out
     assert "Cycle structure:" in out
-    assert "Number of extensions:" in out
+    assert "Number of extensions after adding 1 row:" in out
+
+
+def test_cli_specific_cycle_two_added_rows(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    main(["--c", "3,4", "--rows-to-add", "2"])
+    out = capsys.readouterr().out
+    assert "Specific Cycle Structure for n=7" in out
+    assert "Number of extensions after adding 2 rows:" in out
+    assert "83,328" in out
 
 
 def test_cli_enumerate_all(capsys: pytest.CaptureFixture[str]) -> None:
@@ -73,7 +83,10 @@ def test_cli_random_large_result_uses_summary(
 ) -> None:
     huge_value = 10**500 + 123
 
-    def fake_count_random_extensions(n: int) -> tuple[int, list[int], int]:
+    def fake_count_random_extensions(
+        n: int, *, rows_to_add: int = 1
+    ) -> tuple[int, list[int], int]:
+        assert rows_to_add == 1
         return n, [2, n - 2], huge_value
 
     monkeypatch.setattr(cli, "count_random_extensions", fake_count_random_extensions)

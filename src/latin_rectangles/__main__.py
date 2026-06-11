@@ -9,10 +9,10 @@ from .derangements import (
     generate_random_derangement,
 )
 from .extension_counting import (
-    count_cycle_structure_extensions as count_cycle_structure_extensions_from_lengths,
+    count_extensions_from_cycle_type as count_extensions_from_cycle_type_lengths,
 )
 from .extension_counting import (
-    count_extensions,
+    count_extensions_from_derangement,
 )
 
 _COUNT_SUMMARY_MODULUS = 1_000_000_007
@@ -29,6 +29,21 @@ def _positive_int(raw: str) -> int:
     if value <= 0:
         raise argparse.ArgumentTypeError("Expected a positive integer")
     return value
+
+
+def _non_negative_int(raw: str) -> int:
+    """Parse a non-negative CLI integer."""
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"Expected an integer, got {raw!r}") from exc
+    if value < 0:
+        raise argparse.ArgumentTypeError("Expected a non-negative integer")
+    return value
+
+
+def _row_label(count: int) -> str:
+    return "row" if count == 1 else "rows"
 
 
 def _group_decimal_text(text: str) -> str:
@@ -103,12 +118,15 @@ def _format_extension_count(value: int, *, max_digits: int, full_output: bool) -
     )
 
 
-def count_random_extensions(n: int) -> tuple[int, list[int], int]:
+def count_random_extensions(
+    n: int, *, rows_to_add: int = 1
+) -> tuple[int, list[int], int]:
     """
     Generate a random derangement and count its extensions.
 
     Args:
         n: Size of the derangement
+        rows_to_add: Number of further rows to add.
 
     Returns:
         Tuple of (n, cycle_lengths, extensions_count)
@@ -119,19 +137,25 @@ def count_random_extensions(n: int) -> tuple[int, list[int], int]:
     random_p = generate_random_derangement(n)
     random_cycles = find_cycle_decomposition(random_p)
     cycle_lengths = sorted([len(c) for c in random_cycles])
-    extensions = count_extensions(random_p)
+    extensions = count_extensions_from_derangement(
+        random_p,
+        rows_to_add=rows_to_add,
+    )
 
     return n, cycle_lengths, extensions
 
 
-def count_cycle_structure_extensions(
+def count_extensions_for_cycle_type(
     cycle_structure: str,
+    *,
+    rows_to_add: int = 1,
 ) -> tuple[int, list[int], int]:
     """
     Create a derangement with specific cycle structure and count its extensions.
 
     Args:
         cycle_structure: Comma-separated cycle lengths (e.g., "2,2,4")
+        rows_to_add: Number of further rows to add.
 
     Returns:
         Tuple of (n, cycle_lengths, extensions_count)
@@ -147,7 +171,10 @@ def count_cycle_structure_extensions(
     if n <= 1:
         raise ValueError("Total size must be greater than 1")
 
-    extensions = count_cycle_structure_extensions_from_lengths(cycle_lengths)
+    extensions = count_extensions_from_cycle_type_lengths(
+        cycle_lengths,
+        rows_to_add=rows_to_add,
+    )
 
     return n, sorted(cycle_lengths), extensions
 
@@ -194,12 +221,15 @@ def generate_all_cycle_structures(n: int) -> list[list[int]]:
     return [sorted(partition) for partition in partitions]
 
 
-def enumerate_all_extensions(n: int) -> list[tuple[list[int], int]]:
+def enumerate_all_extensions(
+    n: int, *, rows_to_add: int = 1
+) -> list[tuple[list[int], int]]:
     """
     Enumerate all possible cycle structures for n and count their extensions.
 
     Args:
         n: Size of the derangement
+        rows_to_add: Number of further rows to add.
 
     Returns:
         List of tuples (cycle_structure, extensions_count) sorted by extensions_count
@@ -208,7 +238,10 @@ def enumerate_all_extensions(n: int) -> list[tuple[list[int], int]]:
     results = []
 
     for cycle_lengths in structures:
-        extensions = count_cycle_structure_extensions_from_lengths(cycle_lengths)
+        extensions = count_extensions_from_cycle_type_lengths(
+            cycle_lengths,
+            rows_to_add=rows_to_add,
+        )
         results.append((cycle_lengths, extensions))
 
     # Sort by extensions count (descending), then by cycle structure
@@ -228,12 +261,12 @@ def main(argv: list[str] | None = None) -> None:
 Examples:
   %(prog)s --n 42             # Generate random derangement for n=42
   %(prog)s --c "2,2,4"        # Use specific cycle structure: two 2-cycles and one 4-cycle
+  %(prog)s --c "3,4" --rows-to-add 2
   %(prog)s --c "8"            # Single 8-cycle
   %(prog)s --c "2,2,2,2"      # Four 2-cycles
   %(prog)s --n 8 --all        # Enumerate all possible cycle structures for n=8
         """,
     )
-    # Add --n option for backward compatibility
     parser.add_argument("--n", type=int, help="Size of the derangement (must be > 1)")
     parser.add_argument(
         "--c",
@@ -244,6 +277,12 @@ Examples:
         "--all",
         action="store_true",
         help="Enumerate all possible cycle structures for given n (use with --n)",
+    )
+    parser.add_argument(
+        "--rows-to-add",
+        type=_non_negative_int,
+        default=1,
+        help="Number of further rows to add to the starting 2 x n rectangle",
     )
     parser.add_argument(
         "--max-digits",
@@ -279,14 +318,18 @@ Examples:
     try:
         if args.n and args.all:
             # Enumerate all cycle structures mode
-            results = enumerate_all_extensions(args.n)
+            results = enumerate_all_extensions(
+                args.n,
+                rows_to_add=args.rows_to_add,
+            )
             if not results:
                 print(f"❌ No valid cycle structures found for n={args.n}")
                 sys.exit(1)
 
             print(f"🔍 All Cycle Structures for n={args.n}")
             print(
-                f"📊 Found {len(results)} possible structures with non-zero extensions:"
+                f"📊 Found {len(results)} possible structures with non-zero extensions "
+                f"after adding {args.rows_to_add} {_row_label(args.rows_to_add)}:"
             )
             print()
 
@@ -303,20 +346,28 @@ Examples:
 
         elif args.n:
             # Generate random derangement mode
-            n_val, cycle_lengths, extensions = count_random_extensions(args.n)
+            n_val, cycle_lengths, extensions = count_random_extensions(
+                args.n,
+                rows_to_add=args.rows_to_add,
+            )
             print(f"🎲 Generated Random Derangement for n={n_val}")
             print(f"📊 Cycle structure: {cycle_lengths}")
             print(
-                "🔢 Number of extensions: "
+                f"🔢 Number of extensions after adding {args.rows_to_add} "
+                f"{_row_label(args.rows_to_add)}: "
                 f"{_format_extension_count(extensions, max_digits=args.max_digits, full_output=args.full_output)}"
             )
         elif args.c:
             # Specific cycle structure mode
-            n_val, cycle_lengths, extensions = count_cycle_structure_extensions(args.c)
+            n_val, cycle_lengths, extensions = count_extensions_for_cycle_type(
+                args.c,
+                rows_to_add=args.rows_to_add,
+            )
             print(f"⚙️  Specific Cycle Structure for n={n_val}")
             print(f"📊 Cycle structure: {cycle_lengths}")
             print(
-                "🔢 Number of extensions: "
+                f"🔢 Number of extensions after adding {args.rows_to_add} "
+                f"{_row_label(args.rows_to_add)}: "
                 f"{_format_extension_count(extensions, max_digits=args.max_digits, full_output=args.full_output)}"
             )
     except ValueError as e:

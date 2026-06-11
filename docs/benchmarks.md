@@ -3,13 +3,13 @@
 This repository includes a CSV-first benchmark workflow for the specialized
 `2 x n -> 3 x n` methods:
 
-- `touchard`: `count_cycle_structure_extensions`, using Touchard's formula on
+- `touchard`: `count_extensions_from_cycle_type`, using Touchard's formula on
   cycle lengths.
 - `cycle_auto`: the public cycle-structure router, which chooses Touchard or
   rook schoolbook depending on cache state and cycle-type density.
-- `rook_schoolbook`: `count_extensions(..., use_fft=False)`, using exact
+- `rook_schoolbook`: `count_extensions_from_derangement(..., use_fft=False)`, using exact
   schoolbook polynomial products.
-- `rook_ntt`: `count_extensions(..., use_fft=True)`, using exact NTT/CRT
+- `rook_ntt`: `count_extensions_from_derangement(..., use_fft=True)`, using exact NTT/CRT
   convolution when the transform path is beneficial and falling back to
   schoolbook multiplication otherwise.
 
@@ -235,7 +235,7 @@ This led to two routing changes:
 - `multiply_polynomials_fft` now estimates the number of CRT primes needed and
   falls back to schoolbook multiplication when that estimate is above its prime
   budget.
-- `count_cycle_structure_extensions(..., method="auto")` uses Touchard when
+- `count_extensions_from_cycle_type(..., method="auto")` uses Touchard when
   the needed `M_s` values are already cached or few, but routes cold dense
   high-`n` cycle types to the rook-polynomial product.
 

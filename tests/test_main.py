@@ -4,7 +4,8 @@ import pytest
 
 from latin_rectangles import (
     count_extensions,
-    count_extensions_k,
+    count_extensions_from_cycle_type,
+    count_extensions_from_derangement,
     find_cycle_decomposition,
     generate_random_derangement,
 )
@@ -105,54 +106,54 @@ class TestCountExtensions:
         """Test that non-derangements raise ValueError."""
         p = [0, 1, 2, 3, 4]  # Identity (has fixed points)
         with pytest.raises(ValueError, match="Input permutation must be a derangement"):
-            count_extensions(p)
+            count_extensions_from_derangement(p)
 
     def test_single_2_cycle(self) -> None:
         """Test a simple 2-cycle derangement."""
         p = [0, 2, 1]  # (1 2)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 0  # Known result for 2-cycle
 
     def test_two_2_cycles(self) -> None:
         """Test two 2-cycles."""
         p = [0, 2, 1, 4, 3]  # (1 2)(3 4)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 4  # Actual result from algorithm
 
     def test_3_cycle(self) -> None:
         """Test a 3-cycle."""
         p = [0, 2, 3, 1]  # (1 2 3)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 1  # Actual result from algorithm
 
     def test_4_cycle(self) -> None:
         """Test a 4-cycle."""
         p = [0, 2, 3, 4, 1]  # (1 2 3 4)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 2  # Actual result from algorithm
 
     def test_known_8_cycle_result(self) -> None:
         """Test the known result for an 8-cycle."""
         p = [0, 2, 3, 4, 5, 6, 7, 8, 1]  # 8-cycle
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 4738  # Actual result from algorithm
 
     def test_known_6_2_cycles_result(self) -> None:
         """Test the known result for (6,2)-cycles."""
         p = [0, 2, 3, 4, 5, 6, 1, 8, 7]  # (1 2 3 4 5 6)(7 8)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 4740  # Actual result from algorithm
 
     def test_known_4_4_cycles_result(self) -> None:
         """Test the known result for (4,4)-cycles."""
         p = [0, 2, 3, 4, 1, 6, 7, 8, 5]  # (1 2 3 4)(5 6 7 8)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 4740  # Actual result from algorithm
 
     def test_known_four_2_cycles_result(self) -> None:
         """Test the known result for four 2-cycles."""
         p = [0, 2, 1, 4, 3, 6, 5, 8, 7]  # (1 2)(3 4)(5 6)(7 8)
-        result = count_extensions(p)
+        result = count_extensions_from_derangement(p)
         assert result == 4752  # Actual result from algorithm
 
     def test_result_is_non_negative(self) -> None:
@@ -166,7 +167,7 @@ class TestCountExtensions:
         ]
 
         for p in test_cases:
-            result = count_extensions(p)
+            result = count_extensions_from_derangement(p)
             assert result >= 0, f"Negative result for permutation {p}"
 
     # CLI behavior is covered in tests/test_cli.py
@@ -180,7 +181,7 @@ class TestIntegration:
         for n in [3, 4, 5, 6]:
             derangement = generate_random_derangement(n)
             # Should not raise an exception
-            result = count_extensions(derangement)
+            result = count_extensions_from_derangement(derangement)
             assert isinstance(result, int)
             assert result >= 0
 
@@ -203,8 +204,8 @@ class TestIntegration:
         # Build rows: first identity, second is a derangement p
         p = [0, 2, 3, 1]  # 3-cycle
         rows = [[0, 1, 2, 3], p]
-        general = count_extensions_k(rows)
-        specialized = count_extensions(p)
+        general = count_extensions(rows)
+        specialized = count_extensions_from_derangement(p)
         assert general == specialized
 
     def test_general_k_consistency_multiple_derangements(self) -> None:
@@ -217,7 +218,7 @@ class TestIntegration:
         for p in cases:
             n = len(p) - 1
             id_row = [0, *list(range(1, n + 1))]
-            assert count_extensions_k([id_row, p]) == count_extensions(p)
+            assert count_extensions([id_row, p]) == count_extensions_from_derangement(p)
 
     def test_general_k_small_examples(self) -> None:
         """Check small n and k against a direct permanent for sanity."""
@@ -244,7 +245,7 @@ class TestIntegration:
 
         # n=3, k=2 (two rows: id and a 3-cycle derangement)
         rows = [[0, 1, 2, 3], [0, 2, 3, 1]]
-        assert count_extensions_k(rows) == permanent_of_allowed(rows)
+        assert count_extensions(rows) == permanent_of_allowed(rows)
 
         # n=4, k=3 (three rows): id, (1 2)(3 4), and (1 3)(2 4)
         rows2 = [
@@ -252,7 +253,7 @@ class TestIntegration:
             [0, 2, 1, 4, 3],
             [0, 3, 4, 1, 2],
         ]
-        assert count_extensions_k(rows2) == permanent_of_allowed(rows2)
+        assert count_extensions(rows2) == permanent_of_allowed(rows2)
 
     def test_general_k_one_row_counts_derangements(self) -> None:
         """With one existing row, extensions are exactly derangements."""
@@ -269,13 +270,13 @@ class TestIntegration:
         }
         for n, expected in known_derangements.items():
             identity = [0, *list(range(1, n + 1))]
-            assert count_extensions_k([identity]) == expected
-            assert count_extensions_k([identity], use_fft=True) == expected
+            assert count_extensions([identity]) == expected
+            assert count_extensions([identity], use_fft=True) == expected
 
     def test_general_k_one_row_large_n_fast_path(self) -> None:
         """A one-row input should not enter the exponential component DP."""
         identity = [0, *list(range(1, 101))]
-        assert count_extensions_k([identity]).bit_length() == 524
+        assert count_extensions([identity]).bit_length() == 524
 
     def test_n_minus_1_rows_unique_extension(self) -> None:
         """With k=n-1 rows formed by powers of an n-cycle, there is exactly one extension."""
@@ -287,4 +288,18 @@ class TestIntegration:
         for n in [3, 4, 5]:
             # rows: π^0, π^1, ..., π^{n-2}; unique allowed symbol per column is π^{n-1}
             rows = [power_cycle_perm(n, r) for r in range(n - 1)]
-            assert count_extensions_k(rows) == 1
+            assert count_extensions(rows) == 1
+
+    def test_rows_to_add_zero_returns_one(self) -> None:
+        """There is exactly one way to add zero rows."""
+        rows = [[0, 1, 2, 3], [0, 2, 3, 1]]
+
+        assert count_extensions(rows, rows_to_add=0) == 1
+        assert count_extensions_from_derangement(rows[1], rows_to_add=0) == 1
+        assert count_extensions_from_cycle_type([3], rows_to_add=0) == 1
+
+    def test_two_added_rows_from_cycle_type_research_values(self) -> None:
+        """Direct N_2(lambda) recursion should reproduce the small table."""
+        assert count_extensions_from_cycle_type([2, 4], rows_to_add=2) == 1472
+        assert count_extensions_from_cycle_type([6], rows_to_add=2) == 1462
+        assert count_extensions_from_cycle_type([3, 4], rows_to_add=2) == 83328

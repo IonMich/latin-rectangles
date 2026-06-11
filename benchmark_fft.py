@@ -16,7 +16,7 @@ import random
 import time
 from statistics import mean
 
-from latin_rectangles import count_extensions
+from latin_rectangles import count_extensions_from_derangement
 from latin_rectangles.rook_polynomials import (
     multiply_polynomials,
     multiply_polynomials_fft,
@@ -65,7 +65,7 @@ def bench_polymul(
 def bench_single_cycle(
     ns: list[int], repeats: int = 3
 ) -> tuple[list[int], list[float], list[float]]:
-    """Benchmark count_extensions on a single n-cycle to isolate one convolution."""
+    """Benchmark a single n-cycle count to isolate one convolution."""
 
     def single_cycle_perm(n: int) -> list[int]:
         # [0, 2, 3, ..., n, 1]
@@ -79,11 +79,11 @@ def bench_single_cycle(
         r_fft = []
         for _ in range(repeats):
             t0 = time.perf_counter()
-            _ = count_extensions(p, use_fft=False)
+            _ = count_extensions_from_derangement(p, use_fft=False)
             r_naive.append(time.perf_counter() - t0)
 
             t1 = time.perf_counter()
-            _ = count_extensions(p, use_fft=True)
+            _ = count_extensions_from_derangement(p, use_fft=True)
             r_fft.append(time.perf_counter() - t1)
         times_naive.append(mean(r_naive))
         times_fft.append(mean(r_fft))
@@ -106,7 +106,7 @@ def main() -> None:
     print(f"Observed exponent fft   ~ n^{b1_fft:.2f}")
     print("(The transform path is exact NTT/CRT, not floating-point FFT.)\n")
 
-    print("=== Single-cycle count_extensions (one convolution) ===")
+    print("=== Single-cycle derangement extension count (one convolution) ===")
     n2, t2_naive, t2_fft = bench_single_cycle(ns_cycle)
     b2_naive = fit_power([float(n) for n in n2], t2_naive)
     b2_fft = fit_power([float(n) for n in n2], t2_fft)

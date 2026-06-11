@@ -5,7 +5,8 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Literal
 
-from .derangements import find_cycle_decomposition
+from .derangements import create_cycle_structure, find_cycle_decomposition
+from .general_extensions import count_extensions
 from .rook_polynomials import (
     get_rook_polynomial_for_cycle,
     multiply_polynomials,
@@ -89,6 +90,26 @@ def _validate_cycle_lengths(cycle_lengths: tuple[int, ...]) -> None:
         raise ValueError("Cycle structure parts must be at least 2")
 
 
+def _validate_rows_to_add(rows_to_add: int) -> None:
+    if rows_to_add < 0:
+        raise ValueError("rows_to_add must be non-negative")
+
+
+def _validate_derangement(permutation: list[int]) -> int:
+    n = len(permutation) - 1
+    if n < 0 or not permutation or permutation[0] != 0:
+        raise ValueError("Input permutation must be 1-indexed with permutation[0] == 0")
+    if set(permutation[1:]) != set(range(1, n + 1)):
+        raise ValueError("Input permutation must be a valid permutation of 1..n")
+    if any(i == val for i, val in enumerate(permutation[1:], 1)):
+        raise ValueError("Input permutation must be a derangement (p(i) != i).")
+    return n
+
+
+def _identity_row(n: int) -> list[int]:
+    return [0, *range(1, n + 1)]
+
+
 def _touchard_subset_counts(cycle_lengths: tuple[int, ...]) -> list[int]:
     """Return subset-sum multiplicities for cycle lengths."""
     n = sum(cycle_lengths)
@@ -116,7 +137,7 @@ def _touchard_m_values(cycle_lengths: tuple[int, ...]) -> set[int]:
     }
 
 
-def _count_cycle_structure_extensions_touchard(cycle_lengths: list[int]) -> int:
+def _count_extensions_from_cycle_type_touchard(cycle_lengths: list[int]) -> int:
     """Count 2-row extensions from cycle lengths via Touchard's formula.
 
     The repo's rook polynomials store positive matching numbers r_j. The
@@ -148,7 +169,7 @@ def _count_cycle_structure_extensions_touchard(cycle_lengths: list[int]) -> int:
     return touchard_total // 2
 
 
-def _count_cycle_structure_extensions_rook(
+def _count_extensions_from_cycle_type_rook(
     cycle_lengths: list[int], *, use_fft: bool = False
 ) -> int:
     """Count 2-row extensions from cycle lengths via rook polynomial products."""
@@ -186,51 +207,77 @@ def _choose_cycle_structure_method(
     return "rook"
 
 
-def _count_cycle_structure_extensions_auto(cycle_lengths: list[int]) -> int:
+def _count_extensions_from_cycle_type_auto(cycle_lengths: list[int]) -> int:
     """Count cycle-structure extensions using the routed default method."""
     lengths = tuple(cycle_lengths)
     _validate_cycle_lengths(lengths)
     if _choose_cycle_structure_method(lengths) == "touchard":
-        return _count_cycle_structure_extensions_touchard(cycle_lengths)
-    return _count_cycle_structure_extensions_rook(cycle_lengths, use_fft=False)
+        return _count_extensions_from_cycle_type_touchard(cycle_lengths)
+    return _count_extensions_from_cycle_type_rook(cycle_lengths, use_fft=False)
 
 
-def count_cycle_structure_extensions(
-    cycle_lengths: list[int], *, method: CycleStructureMethod = "auto"
+def count_extensions_from_cycle_type(
+    cycle_lengths: list[int],
+    *,
+    rows_to_add: int = 1,
+    method: CycleStructureMethod = "auto",
 ) -> int:
-    """Count extensions for a derangement defined by cycle lengths."""
+    """Count ordered extensions from a normalized 2 x n start by cycle type."""
+    _validate_rows_to_add(rows_to_add)
+    lengths = tuple(cycle_lengths)
+    _validate_cycle_lengths(lengths)
+
+    if rows_to_add == 0:
+        return 1
+    if rows_to_add > 1:
+        if method != "auto":
+            raise ValueError("method is only supported when rows_to_add == 1")
+        return count_extensions_from_derangement(
+            create_cycle_structure(cycle_lengths),
+            rows_to_add=rows_to_add,
+        )
+
     if method == "auto":
-        return _count_cycle_structure_extensions_auto(cycle_lengths)
+        return _count_extensions_from_cycle_type_auto(cycle_lengths)
     if method == "touchard":
-        return _count_cycle_structure_extensions_touchard(cycle_lengths)
+        return _count_extensions_from_cycle_type_touchard(cycle_lengths)
     if method == "rook":
-        return _count_cycle_structure_extensions_rook(cycle_lengths, use_fft=False)
+        return _count_extensions_from_cycle_type_rook(cycle_lengths, use_fft=False)
     if method == "rook_ntt":
-        return _count_cycle_structure_extensions_rook(cycle_lengths, use_fft=True)
+        return _count_extensions_from_cycle_type_rook(cycle_lengths, use_fft=True)
     raise ValueError(f"Unknown cycle-structure method: {method}")
 
 
-def count_extensions(permutation: list[int], *, use_fft: bool = False) -> int:
+def count_extensions_from_derangement(
+    permutation: list[int], *, rows_to_add: int = 1, use_fft: bool = False
+) -> int:
     """
-    Calculates the number of ways to extend a 2xn Latin rectangle to a 3xn one.
-    This is the most robust and general implementation.
+    Count ordered extensions from a normalized 2 x n Latin rectangle.
 
     Args:
         permutation: A list representing the second row, assuming the first row is
                      (1, 2, ..., n). The list should be 1-indexed, so its
                      length is n+1 and permutation[0] can be a dummy value.
                      It must be a derangement.
-        use_fft: Use exact NTT/CRT convolution for large polynomial products.
+        rows_to_add: Number of further rows to add. ``0`` returns ``1``.
+        use_fft: Use exact NTT/CRT convolution for one-row subproblems.
 
     Returns:
-        The integer number of possible third rows.
+        The integer number of ordered extensions by ``rows_to_add`` rows.
 
     Raises:
         ValueError: If the input permutation is not a derangement.
     """
-    n = len(permutation) - 1
-    if any(i == val for i, val in enumerate(permutation[1:], 1)):
-        raise ValueError("Input permutation must be a derangement (p(i) != i).")
+    _validate_rows_to_add(rows_to_add)
+    n = _validate_derangement(permutation)
+    if rows_to_add == 0:
+        return 1
+    if rows_to_add > 1:
+        return count_extensions(
+            [_identity_row(n), permutation],
+            rows_to_add=rows_to_add,
+            use_fft=use_fft,
+        )
 
     # 1. Find the cycle decomposition of the permutation
     cycles = find_cycle_decomposition(permutation)
@@ -249,4 +296,4 @@ def count_extensions(permutation: list[int], *, use_fft: bool = False) -> int:
     return _apply_inclusion_exclusion(total_rook_poly, n)
 
 
-__all__ = ["count_cycle_structure_extensions", "count_extensions"]
+__all__ = ["count_extensions_from_cycle_type", "count_extensions_from_derangement"]

@@ -1,6 +1,6 @@
 # Latin Rectangles Extension Counter
 
-A high-performance Python library for counting the number of ways to extend a 2×n [Latin rectangle](https://en.wikipedia.org/wiki/Latin_rectangle) to a 3×n Latin rectangle using rook polynomial methods and cycle decomposition theory.
+A Python library for counting ordered extensions of [Latin rectangles](https://en.wikipedia.org/wiki/Latin_rectangle), with optimized exact routines for adding one row to normalized 2×n rectangles and direct recursive support for adding multiple rows at small n.
 
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -18,13 +18,14 @@ Given a 2×n Latin rectangle:
 p[1]  p[2]  p[3]  p[4]  p[5]  p[6]  p[7]  p[8]
 ```
 
-where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), the problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle. This library provides an efficient algorithm for computing Latin rectangle extensions.
+where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), one common problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle. More generally, the public API counts ordered ways to add `rows_to_add` further rows.
 
 ### Key Features
 
-- **High Performance**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available when CRT reconstruction is not too expensive and a cached Touchard formula for repeated cycle-structure queries
+- **High Performance For One Added Row**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available when CRT reconstruction is not too expensive and a cached Touchard formula for repeated cycle-type queries
 - **Memory Efficient**: Approximate O(n^1.36) memory complexity
-- **Generalization to k→k+1**: Exact counting for extending k×n to (k+1)×n via component-wise rook/matching polynomials; exponential in the worst case (as expected from #P-completeness), but fast when orbits/components are small
+- **Consistent Extension API**: `rows_to_add` selects how many ordered rows to add from explicit rows, a normalized derangement, or a cycle type
+- **Generalization to k→k+t**: Exact counting for extending k×n to (k+t)×n; one-row subproblems use component-wise rook/matching polynomials, while `t > 1` uses direct recursion over valid next rows
 
 ## Installation
 
@@ -71,7 +72,7 @@ Generate random derangement:
 > uv run python -m latin_rectangles --n 42
 🎲 Generated Random Derangement for n=42
 📊 Cycle structure: [2, 2, 4, 8, 26]
-🔢 Number of extensions: 185,566,788,772,996,286,199,647,931,971,186,844,003,087,641,029,824
+🔢 Number of extensions after adding 1 row: 185,566,788,772,996,286,199,647,931,971,186,844,003,087,641,029,824
 ```
 
 Use specific cycle structure:
@@ -80,7 +81,16 @@ Use specific cycle structure:
 > uv run python -m latin_rectangles --c "2,2,4"
 ⚙️  Specific Cycle Structure for n=8
 📊 Cycle structure: [2, 2, 4]
-🔢 Number of extensions: 4,744
+🔢 Number of extensions after adding 1 row: 4,744
+```
+
+Add two rows from a normalized 2×n start:
+
+```console
+> uv run python -m latin_rectangles --c "3,4" --rows-to-add 2
+⚙️  Specific Cycle Structure for n=7
+📊 Cycle structure: [3, 4]
+🔢 Number of extensions after adding 2 rows: 83,328
 ```
 
 Large counts are summarized by default to keep the CLI usable and to avoid
@@ -90,7 +100,7 @@ Python's decimal integer string-conversion guard:
 > uv run python -m latin_rectangles --n 1700
 🎲 Generated Random Derangement for n=1700
 📊 Cycle structure: [...]
-🔢 Number of extensions: 4,685 decimal digits (bits=15,562; leading=...; trailing=...; mod 1,000,000,007=...; use --full-output to print all digits)
+🔢 Number of extensions after adding 1 row: 4,685 decimal digits (bits=15,562; leading=...; trailing=...; mod 1,000,000,007=...; use --full-output to print all digits)
 ```
 
 Use `--full-output` to print the entire decimal integer, or `--max-digits N` to
@@ -123,10 +133,10 @@ uv run latin-rectangles --help
 ```python
 from latin_rectangles import (
   count_extensions,
-  count_extensions_k,
+  count_extensions_from_cycle_type,
+  count_extensions_from_derangement,
   count_random_extensions,
   generate_random_derangement,
-  count_cycle_structure_extensions,
 )
 
 # Method 1: One-liner for random derangement
@@ -135,28 +145,32 @@ print(f"Extensions: {extensions:,}")
 
 # Method 2: Step-by-step with custom derangement
 derangement = generate_random_derangement(n=10)
-extensions = count_extensions(derangement)
+extensions = count_extensions_from_derangement(derangement, rows_to_add=1)
 print(f"Derangement {derangement[1:]} has {extensions:,} extensions")
 
-# Method 3: Using a specific cycle structure (e.g., "2,2,4") in one line
+# Method 3: Using a specific cycle type (e.g., "2,2,4") in one line
 cycle_lengths = [2, 2, 4]
-extensions = count_cycle_structure_extensions(cycle_lengths)
+extensions = count_extensions_from_cycle_type(cycle_lengths, rows_to_add=1)
 print(f"Cycle structure {cycle_lengths} has {extensions:,} extensions")  # 4,744 for n=8
 
 # Method 4: With predefined derangement (1-indexed with dummy 0)
 p = [0, 2, 3, 4, 5, 6, 7, 8, 1]  # 8-cycle for n=8
-extensions = count_extensions(p)
+extensions = count_extensions_from_derangement(p)
 print(f"8-cycle has {extensions:,} extensions")  # Output: 4,738
 
-# Bonus: General k→k+1 extension counting (small example)
+# Bonus: General k→k+t extension counting (small example)
 # Rows are 1-indexed permutations; the first row may be non-identity (will be standardized).
 rows = [
   [0, 1, 2, 3, 4],      # identity
   [0, 2, 1, 4, 3],      # (1 2)(3 4)
   [0, 3, 4, 1, 2],      # (1 3)(2 4)
 ]
-extensions_k = count_extensions_k(rows)
+extensions_k = count_extensions(rows, rows_to_add=1)
 print(f"Extend 3×4 → 4×4: {extensions_k} ways")
+
+# Add two rows from a normalized 2×7 rectangle with second-row cycle type (3, 4).
+two_added = count_extensions_from_cycle_type([3, 4], rows_to_add=2)
+print(f"Extend 2×7 → 4×7: {two_added:,} ways")  # 83,328
 ```
 
 ## Algorithm Details
@@ -221,28 +235,43 @@ computed from the rook polynomial.
 
 ### Core Functions
 
-#### `count_extensions(permutation: list[int]) -> int`
+#### `count_extensions(rows: list[list[int]], rows_to_add: int = 1) -> int`
 
-Counts the number of extensions for a given derangement.
+Counts the number of ordered extensions from explicit existing rows.
 
 **Parameters:**
 
-- `permutation`: 1-indexed list representing a derangement (p[0] is dummy value)
+- `rows`: existing Latin rectangle rows as 1-indexed permutations
+- `rows_to_add`: number of further rows to add; `0` returns `1`
 
-**Returns:** Integer number of possible third rows
+**Returns:** Integer number of ordered extensions
 
-**Raises:** `ValueError` if input is not a derangement
+For `rows_to_add=1`, this uses the general component rook/matching-polynomial
+method. For larger values it recursively enumerates valid next rows, which is
+intended for small-n exact work and regression oracles.
 
 The optional `use_fft=True` argument uses exact NTT/CRT convolution only when
 the transform route is expected to be reasonable. It does not use rounded
 floating-point convolution.
 
-#### `count_cycle_structure_extensions(cycle_lengths: list[int], method: str = "auto") -> int`
+#### `count_extensions_from_derangement(permutation: list[int], rows_to_add: int = 1) -> int`
+
+Counts ordered extensions from the normalized `2 x n` rectangle whose first row
+is identity and whose second row is the supplied derangement.
+
+For `rows_to_add=1`, this uses the optimized derangement/cycle-decomposition
+path. For `rows_to_add > 1`, it delegates to the recursive explicit-row API.
+
+#### `count_extensions_from_cycle_type(cycle_lengths: list[int], rows_to_add: int = 1, method: str = "auto") -> int`
 
 The default `method="auto"` uses the Touchard formula when its needed
 one-cycle values are cached or few, and falls back to the rook product for cold
 dense high-`n` cycle types. Explicit methods are `"touchard"`, `"rook"`, and
 `"rook_ntt"`.
+
+The `method` parameter is only supported for `rows_to_add=1`. For
+`rows_to_add > 1`, this builds a canonical derangement with the requested cycle
+type and uses direct recursion.
 
 #### `count_random_extensions(n: int) -> int`
 
@@ -280,34 +309,35 @@ Finds the cycle decomposition of a permutation.
 
 ```python
 from latin_rectangles import count_extensions
+from latin_rectangles import count_extensions_from_derangement
 
 # Example 1: Single 8-cycle
 p_8_cycle = [0, 2, 3, 4, 5, 6, 7, 8, 1]
-print(f"8-cycle: {count_extensions(p_8_cycle):,} extensions")
+print(f"8-cycle: {count_extensions_from_derangement(p_8_cycle):,} extensions")
 # Output: 8-cycle: 4,738 extensions
 
 # Example 2: Two 4-cycles
 p_4_4 = [0, 2, 3, 4, 1, 6, 7, 8, 5]
-print(f"4,4-cycles: {count_extensions(p_4_4):,} extensions")
+print(f"4,4-cycles: {count_extensions_from_derangement(p_4_4):,} extensions")
 # Output: 4,4-cycles: 4,740 extensions
 
 # Example 3: Four 2-cycles
 p_2_2_2_2 = [0, 2, 1, 4, 3, 6, 5, 8, 7]
-print(f"2,2,2,2-cycles: {count_extensions(p_2_2_2_2):,} extensions")
+print(f"2,2,2,2-cycles: {count_extensions_from_derangement(p_2_2_2_2):,} extensions")
 # Output: 2,2,2,2-cycles: 4,752 extensions
 ```
 
 ### Advanced Usage
 
 ```python
-from latin_rectangles import generate_random_derangement, find_cycle_decomposition, count_extensions
+from latin_rectangles import generate_random_derangement, find_cycle_decomposition, count_extensions_from_derangement
 
 # Generate and analyze a random derangement
 n = 15
 derangement = generate_random_derangement(n)
 cycles = find_cycle_decomposition(derangement)
 cycle_lengths = sorted([len(c) for c in cycles])
-extensions = count_extensions(derangement)
+extensions = count_extensions_from_derangement(derangement)
 
 print(f"n={n}")
 print(f"Derangement: {derangement[1:]}")

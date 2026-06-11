@@ -148,7 +148,7 @@ Implementation mapping:
 | `get_rook_polynomial_for_cycle(l)` | compute `R_l(x)` |
 | `multiply_polynomials(a, b)` | exact schoolbook product |
 | `multiply_polynomials_fft(a, b)` | exact NTT/CRT product for large dense inputs |
-| `count_extensions(pi)` | decompose `pi`, multiply cycle rook polynomials, apply inclusion-exclusion |
+| `count_extensions_from_derangement(pi)` | decompose `pi`, multiply cycle rook polynomials, apply inclusion-exclusion |
 
 ## 4. Touchard/Reversed Cycle Polynomial
 
@@ -360,7 +360,7 @@ The implementation computes the numbers `N(a)` by subset-sum dynamic
 programming. This is the function:
 
 ```text
-latin_rectangles.extension_counting._count_cycle_structure_extensions_touchard
+latin_rectangles.extension_counting._count_extensions_from_cycle_type_touchard
 ```
 
 This path is especially useful when enumerating many cycle structures for the
@@ -410,10 +410,10 @@ Implementation mapping:
 | --- | --- |
 | `multiply_polynomials` | schoolbook exact multiplication |
 | `multiply_polynomials_fft` | exact NTT/CRT multiplication |
-| `count_extensions(..., use_fft=True)` | uses exact NTT/CRT for polynomial products |
-| `count_extensions_k(..., use_fft=True)` | same exact transform option for component products |
+| `count_extensions_from_derangement(..., use_fft=True)` | uses exact NTT/CRT for normalized two-row one-row counts |
+| `count_extensions(..., use_fft=True)` | same exact transform option for explicit-row one-row subproblems |
 
-## 8. General `k x n -> (k + 1) x n` Method
+## 8. General `k x n -> (k + t) x n` Method
 
 For `k` existing rows, let the rows be permutations:
 
@@ -477,20 +477,23 @@ Implementation mapping:
 | `_standardize_rows` | normalize the first row to identity |
 | `_compute_orbits` | find forbidden graph components via generated orbits |
 | `_component_matching_polynomial` | compute one component rook polynomial |
-| `count_extensions_k` | multiply components and apply inclusion-exclusion |
+| `count_next_row_extensions` | multiply components and apply inclusion-exclusion for one added row |
+| `count_extensions(rows, rows_to_add=...)` | use the one-row counter directly for `rows_to_add=1`, otherwise recurse over valid next rows |
 
 Complexity is exponential in the largest component size, which is expected for
 the general permanent/counting problem. It is practical when components/orbits
-are small.
+are small. When `rows_to_add > 1`, direct recursion also enumerates valid
+intermediate rows, so it is intended for small-n exact work and regression
+oracles rather than large-n production counts.
 
 ## 9. Which Method Should Be Used?
 
 | Task | Recommended path |
 | --- | --- |
-| Count one arbitrary derangement | `count_extensions(permutation)` |
-| Count one cycle structure | `count_cycle_structure_extensions(cycle_lengths)`, using auto routing |
+| Count from explicit rows | `count_extensions(rows, rows_to_add=...)` |
+| Count from a normalized second-row derangement | `count_extensions_from_derangement(permutation, rows_to_add=...)` |
+| Count from a cycle type | `count_extensions_from_cycle_type(cycle_lengths, rows_to_add=...)` |
 | Enumerate all cycle structures for a fixed `n` | CLI `--all`, using Touchard-value reuse |
-| Count general `k x n -> (k + 1) x n` extensions | `count_extensions_k(rows)` |
 | External dense polynomial products with modest coefficient bounds | pass `use_fft=True` to allow exact NTT/CRT |
 
 The methods are intentionally kept side by side. Touchard's identity is
