@@ -14,6 +14,7 @@ from .rook_polynomials import (
 )
 
 CycleStructureMethod = Literal["auto", "touchard", "rook", "rook_ntt"]
+_TOUCHARD_FOLDED_MAX_N = 64
 
 
 @dataclass(frozen=True)
@@ -132,7 +133,9 @@ def _touchard_m_values(cycle_lengths: tuple[int, ...]) -> set[int]:
     n = sum(cycle_lengths)
     return {
         abs(2 * subset_sum - n)
-        for subset_sum, multiplicity in enumerate(_touchard_subset_counts(cycle_lengths))
+        for subset_sum, multiplicity in enumerate(
+            _touchard_subset_counts(cycle_lengths)
+        )
         if multiplicity
     }
 
@@ -156,6 +159,23 @@ def _count_extensions_from_cycle_type_touchard(cycle_lengths: list[int]) -> int:
     _validate_cycle_lengths(lengths)
 
     n = sum(lengths)
+    if n <= _TOUCHARD_FOLDED_MAX_N:
+        subset_counts = _touchard_subset_counts(lengths)
+        total = 0
+
+        # Complementary subsets with sums a and n-a contribute the same M_s and
+        # are paired by the 1/2 in Touchard's all-sign formula.
+        for subset_sum in range((n + 1) // 2):
+            multiplicity = subset_counts[subset_sum]
+            if multiplicity:
+                total += multiplicity * _one_cycle_extension_count(n - 2 * subset_sum)
+
+        # The central sum, when present, has M_0 = 2 and is also divided by 2.
+        if n % 2 == 0:
+            total += subset_counts[n // 2]
+
+        return total
+
     touchard_total = 0
     for subset_sum, multiplicity in enumerate(_touchard_subset_counts(lengths)):
         if multiplicity:

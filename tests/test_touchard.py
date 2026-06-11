@@ -36,6 +36,17 @@ def test_touchard_research_note_examples() -> None:
     assert _count_extensions_from_cycle_type_touchard([2, 2, 2, 2]) == 4752
 
 
+def test_touchard_folds_complementary_subset_sums_before_m_lookup() -> None:
+    """Complementary subset sums should share the same one-cycle value."""
+    _one_cycle_extension_count.cache_clear()
+
+    assert _count_extensions_from_cycle_type_touchard([2, 2, 2, 2]) == 4752
+
+    info = _one_cycle_extension_count.cache_info()
+    assert info.misses == 2
+    assert info.hits == 0
+
+
 def test_touchard_matches_rook_polynomial_for_small_cycle_structures() -> None:
     """Cross-check the Touchard path against the original rook product path."""
     for n in range(2, 13):
