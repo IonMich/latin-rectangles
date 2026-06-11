@@ -1,0 +1,104 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build:
+    name: Build and test distribution
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+        with:
+          enable-cache: true
+
+      - name: Check tag matches project version
+        run: |
+          uv run --frozen python - <<'PY'
+          import os
+          import tomllib
+          from pathlib import Path
+
+          tag = os.environ["GITHUB_REF_NAME"]
+          expected = "v" + tomllib.loads(Path("pyproject.toml").read_text())["project"]["version"]
+          if tag != expected:
+              raise SystemExit(f"Tag {tag!r} does not match pyproject version {expected!r}")
+          PY
+
+      - name: Lint
+        run: uv run --frozen ruff check src tests benchmark.py benchmark_fft.py benchmarks
+
+      - name: Check formatting
+        run: uv run --frozen ruff format --check src tests benchmark.py benchmark_fft.py benchmarks
+
+      - name: Type check
+        run: uv run --frozen mypy src/
+
+      - name: Test
+        run: uv run --frozen pytest
+
+      - name: Build distribution
+        run: uv build
+
+      - name: Smoke test wheel
+        run: |
+          uv run --isolated --no-project --with dist/*.whl python - <<'PY'
+          from latin_rectangles import count_extensions_from_cycle_type
+
+          assert count_extensions_from_cycle_type([3, 4], rows_to_add=2) == 83328
+          PY
+
+      - name: Smoke test source distribution
+        run: |
+          uv run --isolated --no-project --with dist/*.tar.gz python - <<'PY'
+          from latin_rectangles import count_extensions_from_cycle_type
+
+          assert count_extensions_from_cycle_type([3, 4], rows_to_add=2) == 83328
+          PY
+
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: python-package-distributions
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/latin-rectangles
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8
+
+      - name: Download distribution artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: python-package-distributions
+          path: dist/
+
+      - name: Publish distribution to PyPI
+        run: uv publish --trusted-publishing always dist/*
