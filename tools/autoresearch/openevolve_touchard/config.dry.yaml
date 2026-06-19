@@ -1,0 +1,50 @@
+# Dry OpenEvolve initialization config.
+#
+# This config does not perform model calls because max_iterations is zero. It is
+# useful for checking that OpenEvolve can load the problem and evaluate the seed
+# program. Use config.openrouter.yaml for real search runs.
+
+max_iterations: 0
+checkpoint_interval: 1
+log_level: "INFO"
+random_seed: 42
+
+diff_based_evolution: true
+max_code_length: 40000
+
+llm:
+  api_base: "https://openrouter.ai/api/v1"
+  api_key: "dry-run-key"
+  models:
+    - name: "qwen/qwen3-coder:free"
+      weight: 1.0
+  temperature: 0.1
+  top_p: 0.95
+  max_tokens: 1000
+  timeout: 30
+  retries: 0
+
+prompt:
+  system_message: "Dry config; no LLM calls should be made."
+  include_artifacts: true
+
+database:
+  population_size: 4
+  archive_size: 2
+  num_islands: 1
+  feature_dimensions:
+    - "geomean_speedup"
+    - "candidate_lines"
+  feature_bins: 4
+
+evaluator:
+  timeout: 60
+  max_retries: 0
+  cascade_evaluation: false
+  parallel_evaluations: 1
+  use_llm_feedback: false
+  enable_artifacts: true
+
+novelty:
+  enabled: false
+

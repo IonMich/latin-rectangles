@@ -1,0 +1,72 @@
+# OpenEvolve configuration for Latin-rectangles Touchard cold-start search.
+#
+# Provider: OpenRouter by default.
+# Required environment:
+#   export OPENROUTER_API_KEY="sk-or-v1-..."
+#
+# You can override the models at launch with:
+#   openevolve-run ... --primary-model "qwen/qwen3-coder-flash"
+
+max_iterations: 40
+checkpoint_interval: 5
+log_level: "INFO"
+random_seed: 42
+
+diff_based_evolution: true
+max_code_length: 40000
+
+llm:
+  api_base: "https://openrouter.ai/api/v1"
+  api_key: ${OPENROUTER_API_KEY}
+  models:
+    - name: "qwen/qwen3-coder-flash"
+      weight: 1.0
+  evaluator_models:
+    - name: "qwen/qwen3-coder-flash"
+      weight: 1.0
+  temperature: 0.20
+  top_p: 0.80
+  max_tokens: 8000
+  timeout: 180
+  retries: 3
+
+prompt:
+  system_message: |
+    You are optimizing exact algorithms for counting one-row extensions of
+    2 x n Latin rectangles from derangement cycle types.
+
+    The evaluator calls count_cycle_type(cycle_type, method="touchard") on
+    deterministic cold-start batches and compares exact result digests against
+    the package baseline. Wrong integer answers receive zero score.
+
+    Improve the EVOLVE block only. Preserve exact integer arithmetic. Useful
+    directions include grouped subset-sum DP for repeated parts, batched or
+    recurrent computation of formal one-cycle values M_s, faster accumulation
+    of signed-sum multiplicities, and cheap routing/planning helpers.
+  num_top_programs: 3
+  num_diverse_programs: 2
+  include_artifacts: true
+  max_artifact_bytes: 20000
+
+database:
+  population_size: 40
+  archive_size: 16
+  num_islands: 2
+  elite_selection_ratio: 0.15
+  exploration_ratio: 0.35
+  exploitation_ratio: 0.50
+  feature_dimensions:
+    - "geomean_speedup"
+    - "candidate_lines"
+  feature_bins: 8
+
+evaluator:
+  timeout: 180
+  max_retries: 1
+  cascade_evaluation: false
+  parallel_evaluations: 1
+  use_llm_feedback: false
+  enable_artifacts: true
+
+novelty:
+  enabled: false

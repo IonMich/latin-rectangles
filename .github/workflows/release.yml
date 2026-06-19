@@ -42,10 +42,10 @@ jobs:
           PY
 
       - name: Lint
-        run: uv run --frozen ruff check src tests benchmark.py benchmark_fft.py benchmarks
+        run: uv run --frozen ruff check src tests tools benchmark.py benchmark_fft.py benchmarks
 
       - name: Check formatting
-        run: uv run --frozen ruff format --check src tests benchmark.py benchmark_fft.py benchmarks
+        run: uv run --frozen ruff format --check src tests tools benchmark.py benchmark_fft.py benchmarks
 
       - name: Type check
         run: uv run --frozen mypy src/
