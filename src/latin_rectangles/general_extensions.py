@@ -4,8 +4,8 @@ This module implements exact counting algorithms for extending a k x n Latin
 rectangle by one or more rows, given the existing k rows as permutations
 sigma1..sigmak.
 
-We assume the first row can be standardized to the identity by simultaneous
-conjugation (this preserves the count). The number of valid next rows equals
+We standardize the first row to the identity by applying its inverse to the
+symbols in every row (this preserves the count). The number of valid next rows equals
 the permanent of the n x n 0-1 matrix A with A[i,j] = 1 iff i is not in {sigma_r(j)}.
 
 We compute it via rook/matching polynomials of the forbidden bipartite graph F
@@ -87,7 +87,7 @@ def _compose_perm(a: list[int], b: list[int]) -> list[int]:
 
 
 def _standardize_rows(rows: list[list[int]]) -> list[list[int]]:
-    """Simultaneously conjugate rows so that the first becomes identity.
+    """Relabel every row's symbols so that the first becomes identity.
 
     Args:
         rows: list of k permutations (1-indexed lists of length n+1)
@@ -314,10 +314,11 @@ def count_extensions(
         The ``rows_to_add=1`` path uses the component rook/matching-polynomial
         counter. Larger values use direct recursion over valid next rows, which
         is intended for small-n exact work and regression oracles.
+        A zero-column start has one empty extension for any number of added rows.
     """
     _validate_rows_to_add(rows_to_add)
     n = _validate_latin_rows(rows)
-    if rows_to_add == 0:
+    if rows_to_add == 0 or n == 0:
         return 1
     if n > 0 and len(rows) + rows_to_add > n:
         return 0

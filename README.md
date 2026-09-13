@@ -1,428 +1,213 @@
-# Latin Rectangles Extension Counter
+# Latin Rectangles
 
-A Python library for counting ordered extensions of [Latin rectangles](https://en.wikipedia.org/wiki/Latin_rectangle), with optimized exact routines for adding one row to normalized 2×n rectangles and direct recursive support for adding multiple rows at small n.
+Exact counts for extending a Latin rectangle: append rows that use every symbol
+once and never repeat a symbol in a column. The library combines specialized
+**two-row methods based on permutation cycles and Touchard’s identity** with
+**general k-row counting on forbidden bipartite graphs**.
 
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+<p><picture>
+  <source media="(prefers-reduced-motion: reduce) and (max-width: 600px)" srcset="docs/assets/math-motion/counting-still-mobile.png">
+  <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/math-motion/counting-still-desktop.png">
+  <source media="(max-width: 600px)" srcset="docs/assets/math-motion/counting-mobile.gif">
+  <img src="docs/assets/math-motion/counting-desktop.gif" alt="Two compatible forbidden assignments lead to 104 rook pairs, 720 completions per pair, and inclusion–exclusion cancellation. The final alternating sum is 4744.">
+</picture></p>
 
-## Overview
+*Follow the count: compatible violations → rook counts → unrestricted
+completions → inclusion–exclusion. This paced preview plays once; static figures
+and equations keep the reasoning available below.*
 
-A **Latin rectangle** is an r×n array filled with n different symbols such that each symbol occurs exactly once in each row and at most once in each column.
+[How it works](#how-it-works) · [General k-row counting](#general-k-row-counting) · [API and methods](#api-and-methods)
 
-### Extension Problem
+## Try it
 
-Given a 2×n Latin rectangle:
-
-```text
-1  2  3  4  5  6  7  8
-p[1]  p[2]  p[3]  p[4]  p[5]  p[6]  p[7]  p[8]
-```
-
-where `p` is a [derangement](https://en.wikipedia.org/wiki/Derangement), one common problem is to count how many valid third rows can be added such that the resulting 3×n rectangle remains a Latin rectangle. More generally, the public API counts ordered ways to add `rows_to_add` further rows.
-
-### Key Features
-
-- **High Performance For One Added Row**: Quadratic O(n^2) per-derangement time complexity (see Complexity), with exact NTT/CRT convolution available when CRT reconstruction is not too expensive and a cached Touchard formula for repeated cycle-type queries
-- **Memory Efficient**: Approximate O(n^1.36) memory complexity
-- **Consistent Extension API**: `rows_to_add` selects how many ordered rows to add from explicit rows, a normalized derangement, or a cycle type
-- **Generalization to k→k+t**: Exact counting for extending k×n to (k+t)×n; one-row subproblems use component-wise rook/matching polynomials, while `t > 1` uses direct recursion over valid next rows
-
-## Installation
-
-### Via pip
-
-The library is available on PyPI and can be installed via pip:
-
-```console
-pip install latin-rectangles
-```
-
-### Via uv Package Manager (Recommended)
-
-Using the [`uv` package manager](https://docs.astral.sh/uv/getting-started/installation/), you can try out the package without a separate installation step:
-
-```console
-# Get the number of extensions for a random derangement for a specific number of columns
-uvx latin-rectangles --n 42
-```
-
-If you want to add it to your project, you can use:
-
-```console
-# Add to your project's environment using uv
-uv add latin-rectangles
-```
-
-### Manual Installation
-
-*Alternatively*, you can clone the repository and install it from source:
-
-```console
-git clone https://github.com/ionmich/latin-rectangles.git
-cd latin-rectangles
-```
-
-## Quick Start
-
-### Command Line (CLI) Usage
-
-Generate random derangement:
-
-```console
-> uv run python -m latin_rectangles --n 42
-🎲 Generated Random Derangement for n=42
-📊 Cycle structure: [2, 2, 4, 8, 26]
-🔢 Number of extensions after adding 1 row: 185,566,788,772,996,286,199,647,931,971,186,844,003,087,641,029,824
-```
-
-Use specific cycle structure:
-
-```console
-> uv run python -m latin_rectangles --c "2,2,4"
-⚙️  Specific Cycle Structure for n=8
-📊 Cycle structure: [2, 2, 4]
-🔢 Number of extensions after adding 1 row: 4,744
-```
-
-Add two rows from a normalized 2×n start:
-
-```console
-> uv run python -m latin_rectangles --c "3,4" --rows-to-add 2
-⚙️  Specific Cycle Structure for n=7
-📊 Cycle structure: [3, 4]
-🔢 Number of extensions after adding 2 rows: 83,328
-```
-
-Large counts are summarized by default to keep the CLI usable and to avoid
-Python's decimal integer string-conversion guard:
-
-```console
-> uv run python -m latin_rectangles --n 1700
-🎲 Generated Random Derangement for n=1700
-📊 Cycle structure: [...]
-🔢 Number of extensions after adding 1 row: 4,685 decimal digits (bits=15,562; leading=...; trailing=...; mod 1,000,000,007=...; use --full-output to print all digits)
-```
-
-Use `--full-output` to print the entire decimal integer, or `--max-digits N` to
-raise/lower the exact-printing threshold.
-
-Enumerate all possible cycle structures:
-
-```console
-> uv run python -m latin_rectangles --n 8 --all
-🔍 All Cycle Structures for n=8
-📊 Found 7 possible structures with non-zero extensions:
-
- 1. [2, 2, 2, 2] → 4,752 extensions
- 2. [2, 2, 4] → 4,744 extensions
- 3. [2, 3, 3] → 4,740 extensions
- 4. [2, 6] → 4,740 extensions
- 5. [4, 4] → 4,740 extensions
- 6. [3, 5] → 4,738 extensions
- 7. [8] → 4,738 extensions
-```
-
-## Get help
-
-```console
-uv run latin-rectangles --help
-```
-
-## Python Library Usage
+Requires Python 3.12+. Install in your project with `uv add latin-rectangles`, or
+run `uvx latin-rectangles --c "2,2,4"` to try the illustrated example directly.
 
 ```python
-from latin_rectangles import (
-  count_extensions,
-  count_extensions_from_cycle_type,
-  count_extensions_from_derangement,
-  count_random_extensions,
-  generate_random_derangement,
-)
+from latin_rectangles import count_extensions, count_extensions_from_cycle_type
 
-# Method 1: One-liner for random derangement
-extensions = count_random_extensions(n=12)
-print(f"Extensions: {extensions:,}")
+# Two fixed rows; the relative permutation has cycle lengths 2, 2 and 4.
+count_extensions_from_cycle_type([2, 2, 4])  # 4744 legal third rows
 
-# Method 2: Step-by-step with custom derangement
-derangement = generate_random_derangement(n=10)
-extensions = count_extensions_from_derangement(derangement, rows_to_add=1)
-print(f"Derangement {derangement[1:]} has {extensions:,} extensions")
-
-# Method 3: Using a specific cycle type (e.g., "2,2,4") in one line
-cycle_lengths = [2, 2, 4]
-extensions = count_extensions_from_cycle_type(cycle_lengths, rows_to_add=1)
-print(f"Cycle structure {cycle_lengths} has {extensions:,} extensions")  # 4,744 for n=8
-
-# Method 4: With predefined derangement (1-indexed with dummy 0)
-p = [0, 2, 3, 4, 5, 6, 7, 8, 1]  # 8-cycle for n=8
-extensions = count_extensions_from_derangement(p)
-print(f"8-cycle has {extensions:,} extensions")  # Output: 4,738
-
-# Bonus: General k→k+t extension counting (small example)
-# Rows are 1-indexed permutations; the first row may be non-identity (will be standardized).
-rows = [
-  [0, 1, 2, 3, 4],      # identity
-  [0, 2, 1, 4, 3],      # (1 2)(3 4)
-  [0, 3, 4, 1, 2],      # (1 3)(2 4)
-]
-extensions_k = count_extensions(rows, rows_to_add=1)
-print(f"Extend 3×4 → 4×4: {extensions_k} ways")
-
-# Add two rows from a normalized 2×7 rectangle with second-row cycle type (3, 4).
-two_added = count_extensions_from_cycle_type([3, 4], rows_to_add=2)
-print(f"Extend 2×7 → 4×7: {two_added:,} ways")  # 83,328
+# Three explicit rows; a leading zero marks the 1-indexed representation.
+rows = [[0, 1, 2, 3, 4], [0, 2, 1, 4, 3], [0, 3, 4, 1, 2]]
+count_extensions(rows)  # 1 legal fourth row
 ```
 
-## Algorithm Details
+## How it works
 
-### Mathematical Foundation
+### Rows become forbidden positions
 
-The algorithms are derived in detail in [docs/methods.md](docs/methods.md),
-including notation, the rook-polynomial formula, the Touchard identity, the
-exact NTT/CRT convolution path, and the general `k x n -> (k + 1) x n` method.
-The benchmark and plotting workflow is documented in
-[docs/benchmarks.md](docs/benchmarks.md).
+For the illustrated two-row start, relabel the symbols so the first row is the
+identity. The second row is the permutation
 
-At a high level, the specialized `2 x n -> 3 x n` counter uses **rook
-polynomial theory**:
-
-1. **Input**: A derangement (permutation with no fixed points) representing the second row
-2. **Cycle Decomposition**: Decompose the derangement into disjoint cycles
-3. **Rook Polynomials**: Compute rook polynomial for each cycle structure
-4. **Polynomial Multiplication**: Combine rook polynomials to get the final count
-
-For direct cycle-structure inputs, the implementation also uses Touchard's
-identity. If the cycle lengths are `l_1, ..., l_c`, then
-
-```text
-E(l_1, ..., l_c) = 1/2 * sum_epsilon M_|epsilon_1 l_1 + ... + epsilon_c l_c|
+```math
+\pi=(1\;2)(3\;4)(5\;6\;7\;8).
 ```
 
-where `M_s` is the one-cycle inclusion-exclusion value. The values `M_0 = 2`
-and `M_1 = -1` are formal correction terms from the Chebyshev polynomial
-identity; they are not extension counts for actual 0- or 1-cycles.
+An entry σ(i) of a proposed next row becomes a dot at position (i, σ(i)) on a
+board. A valid row has one dot in each board row and column, avoiding the used
+positions (i, i) and (i, π(i)). Equivalently, each forbidden square is an edge
+between a column vertex cᵢ and a symbol vertex sⱼ.
 
-This is Touchard's 1934 discordant-permutation formula specialized to the
-no-fixed-point relative cycle structure of a normalized `2 x n` Latin rectangle.
-The implementation derives the same expression from the
-rook-polynomial/forbidden-graph view and evaluates it with cached one-cycle
-values.
+<p><picture>
+  <source media="(max-width: 600px)" srcset="docs/assets/math-readme/board-components-mobile.svg">
+  <img src="docs/assets/math-readme/board-components-desktop.svg" alt="The 8 by 8 forbidden board separates into C4, C4 and C8 bipartite graph components. Two highlighted forbidden squares correspond to two edges with no shared endpoint.">
+</picture></p>
 
-Internally, the rook polynomial for one `l`-cycle stores positive matching
-numbers `r_j`, while the Touchard proof uses the reversed signed polynomial
-`q_l(t) = sum_j (-1)^j r_j t^(l-j)` and the linear functional `F(t^d) = d!`.
-For `l >= 2`, `M_l = F(q_l)` is exactly the same inclusion-exclusion count
-computed from the rook polynomial.
+Each vertex has degree two, so a permutation cycle of length ℓ gives a graph
+cycle with 2ℓ vertices. Nonattacking rooks on the forbidden board correspond
+exactly to graph matchings: selected edges with no shared endpoint.
 
-## Complexity
+### Count matchings, then apply inclusion–exclusion
 
-- Per derangement (fixed 2×n Latin rectangle): the default method runs in O(n^2) time due to polynomial multiplications whose total degree sums to n. Memory usage is empirically ~O(n^1.36). The optional `use_fft=True` path uses exact NTT/CRT convolution for large dense polynomial products and falls back to schoolbook multiplication for small products, skinny products, or products whose coefficient sizes would require too many CRT primes.
+Let rⱼ be the number of ways to place j nonattacking rooks on the forbidden
+board. The rook polynomial records these numbers; independent graph components
+multiply:
 
-- Repeated cycle-structure queries: the Touchard method reuses cached
-  one-cycle values `M_s`, which is especially useful when enumerating all cycle
-  structures for a fixed `n`.
-
-- Enumerating all relevant cycle types at a fixed n: the number of distinct cycle-type inputs is
-  T(n) = p(n) − p(n − 1),
-  where p(n) is the partition function (partitions of n). Using the Hardy–Ramanujan asymptotic
-  p(n) ≍ (1/(4√3 n)) · exp(C √n) with C = π√(2/3), one gets
-  T(n) = p(n) − p(n − 1) = Θ(exp(C √n) / n^{3/2}).
-  Therefore, the total time to compute extensions for all cycle types scales as
-  O(n^2 · T(n)) = O(√n · exp(C √n))
-  with the constant C = π√(2/3). Peak memory is still governed by the per-derangement footprint since enumeration can reuse buffers.
-
-## API Reference
-
-### Core Functions
-
-#### `count_extensions(rows: list[list[int]], rows_to_add: int = 1) -> int`
-
-Counts the number of ordered extensions from explicit existing rows.
-
-**Parameters:**
-
-- `rows`: existing Latin rectangle rows as 1-indexed permutations
-- `rows_to_add`: number of further rows to add; `0` returns `1`
-
-**Returns:** Integer number of ordered extensions
-
-For `rows_to_add=1`, this uses the general component rook/matching-polynomial
-method. For larger values it recursively enumerates valid next rows, which is
-intended for small-n exact work and regression oracles.
-
-The optional `use_fft=True` argument uses exact NTT/CRT convolution only when
-the transform route is expected to be reasonable. It does not use rounded
-floating-point convolution.
-
-#### `count_extensions_from_derangement(permutation: list[int], rows_to_add: int = 1) -> int`
-
-Counts ordered extensions from the normalized `2 x n` rectangle whose first row
-is identity and whose second row is the supplied derangement.
-
-For `rows_to_add=1`, this uses the optimized derangement/cycle-decomposition
-path. For `rows_to_add > 1`, it delegates to the recursive explicit-row API.
-
-#### `count_extensions_from_cycle_type(cycle_lengths: list[int], rows_to_add: int = 1, method: str = "auto") -> int`
-
-The default `method="auto"` uses the Touchard formula when its needed
-one-cycle values are cached or few, and falls back to the rook product for cold
-dense high-`n` cycle types. Explicit methods are `"touchard"`, `"rook"`, and
-`"rook_ntt"`.
-
-The `method` parameter is only supported for `rows_to_add=1`. For
-`rows_to_add > 1`, this builds a canonical derangement with the requested cycle
-type and uses direct recursion.
-
-#### `count_random_extensions(n: int) -> int`
-
-Convenience function that generates a random derangement and counts its extensions.
-
-**Parameters:**
-
-- `n`: Size of the derangement (must be > 1)
-
-**Returns:** Number of extensions for the randomly generated derangement
-
-#### `generate_random_derangement(n: int) -> list[int]`
-
-Generates a random derangement of size n.
-
-**Parameters:**
-
-- `n`: Size of the derangement
-
-**Returns:** 1-indexed list representing the derangement
-
-#### `find_cycle_decomposition(permutation: list[int]) -> list[list[int]]`
-
-Finds the cycle decomposition of a permutation.
-
-**Parameters:**
-
-- `permutation`: 1-indexed permutation
-
-**Returns:** List of cycles (each cycle is a list of indices)
-
-## Examples
-
-### Basic Usage Examples
-
-```python
-from latin_rectangles import count_extensions
-from latin_rectangles import count_extensions_from_derangement
-
-# Example 1: Single 8-cycle
-p_8_cycle = [0, 2, 3, 4, 5, 6, 7, 8, 1]
-print(f"8-cycle: {count_extensions_from_derangement(p_8_cycle):,} extensions")
-# Output: 8-cycle: 4,738 extensions
-
-# Example 2: Two 4-cycles
-p_4_4 = [0, 2, 3, 4, 1, 6, 7, 8, 5]
-print(f"4,4-cycles: {count_extensions_from_derangement(p_4_4):,} extensions")
-# Output: 4,4-cycles: 4,740 extensions
-
-# Example 3: Four 2-cycles
-p_2_2_2_2 = [0, 2, 1, 4, 3, 6, 5, 8, 7]
-print(f"2,2,2,2-cycles: {count_extensions_from_derangement(p_2_2_2_2):,} extensions")
-# Output: 2,2,2,2-cycles: 4,752 extensions
+```math
+R_B(x)=\sum_{j=0}^{n}r_jx^j
+       =\prod_{C\in\mathrm{components}(B)}R_C(x).
 ```
 
-### Advanced Usage
+For the two-row case, write R<sub>ℓ</sub> for the polynomial of a length-ℓ permutation
+cycle. In this example:
 
-```python
-from latin_rectangles import generate_random_derangement, find_cycle_decomposition, count_extensions_from_derangement
-
-# Generate and analyze a random derangement
-n = 15
-derangement = generate_random_derangement(n)
-cycles = find_cycle_decomposition(derangement)
-cycle_lengths = sorted([len(c) for c in cycles])
-extensions = count_extensions_from_derangement(derangement)
-
-print(f"n={n}")
-print(f"Derangement: {derangement[1:]}")
-print(f"Cycle structure: {cycle_lengths}")
-print(f"Extensions: {extensions:,}")
+```math
+\begin{aligned}
+R_2(x)&=1+4x+2x^2,\\
+R_4(x)&=1+8x+20x^2\\
+      &\quad+16x^3+2x^4,\\
+R_B(x)&=R_2(x)^2R_4(x).
+\end{aligned}
 ```
 
-### Batch Processing
+The figure highlights one compatible pair of forbidden assignments. Of the
+120 pairs of forbidden squares, eight share a column and eight share a symbol.
+These rejected groups do not overlap, giving
 
-```python
-from latin_rectangles import count_random_extensions
-
-# Process multiple sizes
-results = []
-for n in range(5, 21):
-    extensions = count_random_extensions(n)
-    results.append((n, extensions))
-    print(f"n={n:2d}: {extensions:,} extensions")
-
-# Find the size with the most extensions in this batch
-max_n, max_extensions = max(results, key=lambda x: x[1])
-print(f"Maximum: n={max_n} with {max_extensions:,} extensions")
+```math
+r_2=\binom{16}{2}-8-8=104.
 ```
 
-## Development
+Fixing j compatible assignments leaves (n−j)! unrestricted permutations,
+including those with further forbidden assignments. For the selected pair,
+six columns and six symbols remain: 6! = 720 completions. Inclusion–exclusion
+combines these overlapping counts:
 
-### Running Tests
-
-```bash
-# Run the test suite
-uv run pytest
-
-# Run with coverage
-uv run pytest --cov=latin_rectangles
-
-# Run specific test
-uv run pytest tests/test_main.py -v
+```math
+E=\sum_{j=0}^{n}(-1)^j r_j(n-j)!.
 ```
 
-### Code Quality
+A row with two violations is counted once, subtracted twice, and added back
+once: 1−2+1 = 0. More generally, a row with t > 0 violations has weight
 
-```bash
-# Type checking
-uv run mypy src/
-
-# Linting
-uv run ruff check src/
-
-# Formatting
-uv run ruff format src/
+```math
+\sum_{j=0}^{t}(-1)^j\binom{t}{j}=(1-1)^t=0.
 ```
 
-### Benchmarking
+A legal row appears only in the initial count and keeps a weight of one.
+For this board, the coefficients are `(1, 16, 104, 352, 662, 688, 376, 96, 8)`.
+Their alternating factorial sum gives **4,744** legal third rows—the same answer
+as enumerating all 8! candidates.
 
-```bash
-# Run performance benchmarks
-uv run python benchmark.py
+## General k-row counting
 
-# Analyze complexity
-uv run python complexity_analysis.py
+With k existing rows, column i has forbidden edges to each of its k used
+symbols. The graph still factors over connected components, but for k > 2
+those components need not be cycles. The example below has three rows and a
+single connected forbidden component.
+
+<p><picture>
+  <source media="(max-width: 600px)" srcset="docs/assets/math-readme/general-graph-mobile.svg">
+  <img src="docs/assets/math-readme/general-graph-desktop.svg" alt="Three existing rows create a forbidden bipartite graph with four column and four symbol vertices. Column c1 has three highlighted forbidden neighbors; the component is not a simple cycle.">
+</picture></p>
+
+The component algorithm branches on a column c. A matching either leaves c
+unmatched, or uses exactly one edge from c to a neighboring symbol s:
+
+```math
+R_F(x)=R_{F-c}(x)
+       +x\sum_{s\in N_F(c)}R_{F-\{c,s\}}(x).
 ```
 
-## Contributing
+Memoization over the remaining column and symbol masks reuses these subproblems.
+After multiplying the component polynomials, the same inclusion–exclusion
+formula gives the next-row count. For the displayed three-row board it gives
+**one** fourth row.
 
-Contributions are welcome! Please see [DEVELOPMENT.md](DEVELOPMENT.md) for development guidelines.
+The first row may be nonidentity: relabelling symbols standardizes it without
+changing the count. A single existing row uses the derangement recurrence.
+For several added rows, `rows_to_add` counts **ordered** extensions by recursing
+over valid intermediate rows. The general matching computation is exponential
+in the largest component size; multiple added rows are intended for small-n
+exact work. [Full general-method derivation](docs/methods.md#8-general-k-x-n---k--t-x-n-method)
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
+## Two rows: Touchard’s reduction
+
+Two-row cycle polynomials have extra structure. Reverse their coefficients and
+alternate the signs:
+
+```math
+q_\ell(t)=t^\ell R_\ell(-1/t),\qquad \ell\ge2.
+```
+
+These polynomials satisfy the sum-and-difference identity
+
+```math
+q_a(t)q_b(t)=q_{a+b}(t)+q_{|a-b|}(t),
+```
+
+with formal endpoints q₀ = 2 and q₁ = t−2. One way to see it is to write
+
+```math
+q_\ell(t)=y^\ell+y^{-\ell},\qquad y+y^{-1}=t-2,
+```
+
+then multiply. Repeated application gives
+
+```math
+q_2(t)^2q_4(t)=q_8(t)+2q_4(t)+q_0(t).
+```
+
+<p><picture>
+  <source media="(max-width: 600px)" srcset="docs/assets/math-readme/touchard-mobile.svg">
+  <img src="docs/assets/math-readme/touchard-desktop.svg" alt="Fixing the first sign gives sums 8, 0, 4 and minus 4 from the cycle lengths 2, 2, 4. Absolute values request M8 once, M0 once and M4 twice.">
+</picture></p>
+
+The linear functional F(tᵈ) = d! turns each reversed polynomial into its
+inclusion–exclusion count, M<sub>ℓ</sub> = F(q<sub>ℓ</sub>). Thus the same answer reduces to
+
+```math
+E=M_8+2M_4+M_0=4738+2\cdot2+2=4744.
+```
+
+M₀ = 2 is a formal polynomial value, not the count for an empty rectangle.
+The implementation evaluates the sign-sum multiplicities with subset-sum
+counts and reuses cached M<sub>ℓ</sub> values. This is **Touchard’s 1934 counting identity**;
+[the derivation and attribution](docs/methods.md#5-derivation-of-touchards-formula)
+are documented. It is specific to the two-row structure; the general k-row
+method above uses component matching polynomials directly.
+
+## API and methods
+
+| Starting data | Function |
+|---|---|
+| Explicit Latin-rectangle rows | `count_extensions(rows, rows_to_add=1)` |
+| Identity first row and a deranged second row | `count_extensions_from_derangement(p, rows_to_add=1)` |
+| Relative cycle lengths of two rows | `count_extensions_from_cycle_type(lengths, rows_to_add=1)` |
+
+The cycle-type API offers `auto`, `touchard`, `rook` and `rook_ntt` methods for
+one added row. Counts use integers throughout. The optional transform path uses
+NTT/CRT reconstruction with schoolbook fallback; it is not floating-point FFT.
+The favorable method depends on structure, coefficient size and cache state.
+
+- [Methods, equations and method selection](docs/methods.md)
+- [Benchmark workloads and reproduction](docs/benchmarks.md)
+- [Independent correctness checks](tests/test_independent_verification.py)
+- [Generation and CLI regression checks](tests/test_workflow_audit.py)
+- [Development and reproduction](DEVELOPMENT.md)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Citation
-
-If you use this library in your research, please cite:
-
-```bibtex
-@software{latin_rectangles,
-  title={Latin Rectangles Extensions},
-  author={Ioannis Michaloliakos},
-  year={2025},
-  url={https://github.com/ionmich/latin-rectangles}
-}
-```
+[MIT](LICENSE).

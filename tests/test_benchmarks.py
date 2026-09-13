@@ -9,6 +9,20 @@ import pytest
 from benchmarks import benchmark_cycle_type_methods as bench
 from benchmarks import diagnose_scaling as diagnose
 from benchmarks import plot_cycle_type_methods as plots
+from benchmarks import verify_and_benchmark as verify
+
+
+def test_verification_benchmark_rejects_wrong_answer() -> None:
+    """A fast but wrong candidate must never get a successful timing row."""
+    with pytest.raises(ValueError, match="Exact correctness check failed"):
+        verify.measure_case(
+            "wrong",
+            {},
+            {"baseline": lambda: 5, "candidate": lambda: 6},
+            expected=5,
+            oracle="literal",
+            repeats=1,
+        )
 
 
 def test_cycle_type_counts_match_known_values() -> None:

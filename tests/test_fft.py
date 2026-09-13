@@ -74,7 +74,7 @@ def test_count_extensions_fft_regression_all_2_cycles_n_40() -> None:
 
 
 def test_count_extensions_fft_two_large_cycles() -> None:
-    """Force transform multiplication inside the rook-product extension path."""
+    """Large rook coefficients exercise the CRT-budget schoolbook fallback."""
     p = create_cycle_structure([200, 200])
     naive = count_extensions_from_derangement(p, use_fft=False)
     fast = count_extensions_from_derangement(p, use_fft=True)

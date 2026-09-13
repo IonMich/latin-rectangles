@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="410" viewBox="0 0 360 410" role="img" aria-labelledby="title"><title id="title">For three existing rows, each column has three forbidden edges. The highlighted neighborhood is column c1; the graph is no longer a union of cycles.</title><rect width="100%" height="100%" fill="white"/>
+<text x="16.00" y="28.00" font-family="Arial,sans-serif" font-size="16" text-anchor="start" fill="#192b3b" font-weight="600">General k rows: a matching problem</text>
+<line x1="84.00" y1="96.00" x2="264.00" y2="96.00" stroke="#2869a6" stroke-width="3"/>
+<line x1="84.00" y1="96.00" x2="264.00" y2="163.00" stroke="#2869a6" stroke-width="3"/>
+<line x1="84.00" y1="96.00" x2="264.00" y2="230.00" stroke="#2869a6" stroke-width="3"/>
+<line x1="84.00" y1="163.00" x2="264.00" y2="163.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="163.00" x2="264.00" y2="96.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="163.00" x2="264.00" y2="297.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="230.00" x2="264.00" y2="230.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="230.00" x2="264.00" y2="297.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="230.00" x2="264.00" y2="96.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="297.00" x2="264.00" y2="297.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="297.00" x2="264.00" y2="230.00" stroke="#ced8e1" stroke-width="1.2"/>
+<line x1="84.00" y1="297.00" x2="264.00" y2="163.00" stroke="#ced8e1" stroke-width="1.2"/>
+<circle cx="84.00" cy="96.00" r="7" fill="#192b3b"/>
+<rect x="258.00" y="90.00" width="12.00" height="12.00" fill="#192b3b" stroke="#192b3b"/>
+<text x="66.00" y="101.00" font-family="Arial,sans-serif" font-size="16" text-anchor="end" fill="#192b3b" font-weight="400">c1</text>
+<text x="282.00" y="101.00" font-family="Arial,sans-serif" font-size="16" text-anchor="start" fill="#192b3b" font-weight="400">s1</text>
+<circle cx="84.00" cy="163.00" r="7" fill="#192b3b"/>
+<rect x="258.00" y="157.00" width="12.00" height="12.00" fill="#192b3b" stroke="#192b3b"/>
+<text x="66.00" y="168.00" font-family="Arial,sans-serif" font-size="16" text-anchor="end" fill="#192b3b" font-weight="400">c2</text>
+<text x="282.00" y="168.00" font-family="Arial,sans-serif" font-size="16" text-anchor="start" fill="#192b3b" font-weight="400">s2</text>
+<circle cx="84.00" cy="230.00" r="7" fill="#192b3b"/>
+<rect x="258.00" y="224.00" width="12.00" height="12.00" fill="#192b3b" stroke="#192b3b"/>
+<text x="66.00" y="235.00" font-family="Arial,sans-serif" font-size="16" text-anchor="end" fill="#192b3b" font-weight="400">c3</text>
+<text x="282.00" y="235.00" font-family="Arial,sans-serif" font-size="16" text-anchor="start" fill="#192b3b" font-weight="400">s3</text>
+<circle cx="84.00" cy="297.00" r="7" fill="#192b3b"/>
+<rect x="258.00" y="291.00" width="12.00" height="12.00" fill="#192b3b" stroke="#192b3b"/>
+<text x="66.00" y="302.00" font-family="Arial,sans-serif" font-size="16" text-anchor="end" fill="#192b3b" font-weight="400">c4</text>
+<text x="282.00" y="302.00" font-family="Arial,sans-serif" font-size="16" text-anchor="start" fill="#192b3b" font-weight="400">s4</text>
+<text x="84.00" y="63.00" font-family="Arial,sans-serif" font-size="14" text-anchor="middle" fill="#192b3b" font-weight="400">Columns</text>
+<text x="264.00" y="63.00" font-family="Arial,sans-serif" font-size="14" text-anchor="middle" fill="#192b3b" font-weight="400">Symbols</text>
+<text x="180.00" y="388.00" font-family="Arial,sans-serif" font-size="13" text-anchor="middle" fill="#192b3b" font-weight="400">Skip c₁, or match it to one of its forbidden neighbors</text>
+</svg>

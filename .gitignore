@@ -190,6 +190,12 @@ cython_debug/
 benchmark_results/
 benchmark_plots/
 
+# Local evidence, generated presentation bundles, and release reviews
+/docs/evidence/
+/docs/workflow-audit.md
+/docs/verification-case-study.md
+/.release-review/
+
 # PyPI configuration file
 .pypirc
 

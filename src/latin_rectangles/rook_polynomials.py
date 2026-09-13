@@ -24,10 +24,10 @@ def get_rook_polynomial_for_cycle(k: int) -> list[int]:
         k: The cycle length.
 
     Returns:
-        List of coefficients for the rook polynomial.
+        A fresh list of coefficients for the rook polynomial.
     """
     if k in _ROOK_POLY_CACHE:
-        return _ROOK_POLY_CACHE[k]
+        return _ROOK_POLY_CACHE[k].copy()
 
     # The rook polynomial has degree k, so it has k+1 coefficients.
     coeffs = [0] * (k + 1)
@@ -52,7 +52,7 @@ def get_rook_polynomial_for_cycle(k: int) -> list[int]:
         coeffs[j] = term1
 
     _ROOK_POLY_CACHE[k] = coeffs
-    return coeffs
+    return coeffs.copy()
 
 
 def multiply_polynomials(poly1: list[int], poly2: list[int]) -> list[int]:
@@ -67,6 +67,8 @@ def multiply_polynomials(poly1: list[int], poly2: list[int]) -> list[int]:
         Product polynomial as list of coefficients.
     """
     len1, len2 = len(poly1), len(poly2)
+    if len1 == 0 or len2 == 0:
+        return []
     new_len = len1 + len2 - 1
     result_poly = [0] * new_len
     for i in range(len1):

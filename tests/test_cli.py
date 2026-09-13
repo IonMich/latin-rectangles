@@ -47,6 +47,41 @@ def test_cli_enumerate_all(capsys: pytest.CaptureFixture[str]) -> None:
     assert "Found" in out
 
 
+@pytest.mark.parametrize(("n", "rows_to_add"), [(2, 1), (3, 2), (4, 3)])
+def test_cli_all_reports_zero_when_no_extensions_exist(
+    n: int, rows_to_add: int, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """There cannot be more than n rows in a nonempty Latin rectangle."""
+    main(["--n", str(n), "--all", "--rows-to-add", str(rows_to_add)])
+    output = capsys.readouterr().out
+    assert "Found 0 possible structures with non-zero extensions" in output
+    assert "→" not in output
+
+
+def test_cli_all_zero_added_rows_still_has_one_empty_extension(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    main(["--n", "2", "--all", "--rows-to-add", "0"])
+    output = capsys.readouterr().out
+    assert "Found 1 possible structures" in output
+    assert "[2] → 1 extensions" in output
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [["--n", "0", "--c", "2,2"], ["--n", "4", "--c", ""], ["--c", "", "--all"]],
+)
+def test_cli_conflicts_are_based_on_option_presence(
+    argv: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as error:
+        main(argv)
+    assert error.value.code == 1
+    captured = capsys.readouterr()
+    assert "Cannot" in captured.err
+    assert captured.out == ""
+
+
 def test_format_extension_count_summarizes_large_values() -> None:
     huge_value = 10**500 + 123
 

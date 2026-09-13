@@ -1,5 +1,14 @@
 # Benchmarking Algorithm Scaling
 
+For a compact, correctness-gated benchmark with raw samples and machine metadata,
+use the [verification runner](../benchmarks/verify_and_benchmark.py):
+`uv run --frozen benchmarks/verify_and_benchmark.py`.
+It runs the test suite before benchmarking and writes samples, exact-result
+hashes, input parameters and machine metadata to the ignored local file
+`benchmark_results/verification.json`. Any failed test or unequal answer stops
+the run before that file is replaced. The scaling tools below provide broader
+workload exploration.
+
 This repository includes a CSV-first benchmark workflow for the specialized
 `2 x n -> 3 x n` methods:
 
