@@ -79,12 +79,14 @@ def create_cycle_structure(cycle_lengths: list[int]) -> list[int]:
         1-indexed permutation with the specified cycle structure
 
     Raises:
-        ValueError: If cycle_lengths contains a 1-cycle (would create fixed point)
+        ValueError: If any cycle length is less than 2.
     """
     if 1 in cycle_lengths:
         raise ValueError(
             "Cycle structure cannot contain 1-cycles (would create fixed points)"
         )
+    if any(length < 2 for length in cycle_lengths):
+        raise ValueError("Cycle structure parts must be at least 2")
 
     n = sum(cycle_lengths)
     if n == 0:

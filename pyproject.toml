@@ -1,13 +1,18 @@
 [project]
 name = "latin-rectangles"
-version = "0.3.2"
+version = "0.3.3"
 description = "Count ordered extensions of Latin rectangles."
-readme = "README.md"
+readme = "PYPI_README.md"
 authors = [
     { name = "Ioannis Michaloliakos", email = "ioannis.michalol@ufl.edu" }
 ]
 requires-python = ">=3.12"
 dependencies = []
+
+[project.urls]
+Repository = "https://github.com/IonMich/latin-rectangles"
+Documentation = "https://github.com/IonMich/latin-rectangles/blob/main/README.md"
+Issues = "https://github.com/IonMich/latin-rectangles/issues"
 
 [project.scripts]
 latin-rectangles = "latin_rectangles.__main__:main"
@@ -26,6 +31,10 @@ exclude = [
     "/dist/",
     "/htmlcov/",
     "/literature_sources/",
+    "/.release-review/",
+    "/docs/evidence/",
+    "/docs/workflow-audit.md",
+    "/docs/verification-case-study.md",
 ]
 
 [dependency-groups]

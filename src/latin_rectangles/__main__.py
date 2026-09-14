@@ -301,22 +301,22 @@ Examples:
 
     args = parser.parse_args(argv)
 
-    if args.n and args.c:
+    if args.n is not None and args.c is not None:
         print("❌ Error: Cannot specify both --n and --c arguments", file=sys.stderr)
         sys.exit(1)
 
-    if args.c and args.all:
+    if args.c is not None and args.all:
         print(
             "❌ Error: Cannot use --all with --c (use --all with --n)", file=sys.stderr
         )
         sys.exit(1)
 
-    if not args.n and not args.c:
+    if args.n is None and args.c is None:
         parser.print_help()
         sys.exit(1)
 
     try:
-        if args.n and args.all:
+        if args.n is not None and args.all:
             # Enumerate all cycle structures mode
             results = enumerate_all_extensions(
                 args.n,
@@ -327,8 +327,9 @@ Examples:
                 sys.exit(1)
 
             print(f"🔍 All Cycle Structures for n={args.n}")
+            positive_count = sum(extensions > 0 for _, extensions in results)
             print(
-                f"📊 Found {len(results)} possible structures with non-zero extensions "
+                f"📊 Found {positive_count} possible structures with non-zero extensions "
                 f"after adding {args.rows_to_add} {_row_label(args.rows_to_add)}:"
             )
             print()
@@ -344,7 +345,7 @@ Examples:
                         f"{i:2d}. {cycle_structure} → {formatted_extensions} extensions"
                     )
 
-        elif args.n:
+        elif args.n is not None:
             # Generate random derangement mode
             n_val, cycle_lengths, extensions = count_random_extensions(
                 args.n,
@@ -357,7 +358,7 @@ Examples:
                 f"{_row_label(args.rows_to_add)}: "
                 f"{_format_extension_count(extensions, max_digits=args.max_digits, full_output=args.full_output)}"
             )
-        elif args.c:
+        elif args.c is not None:
             # Specific cycle structure mode
             n_val, cycle_lengths, extensions = count_extensions_for_cycle_type(
                 args.c,

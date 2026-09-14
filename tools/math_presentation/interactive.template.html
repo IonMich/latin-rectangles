@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Latin Rectangles · Counting legal third rows</title>
+<style>
+:root{color-scheme:light dark;--paper:#fcfcfa;--ink:#1c3439;--muted:#566d70;--line:#d6dfdc;--soft:#eff3f0;--teal:#116b61;--teal-soft:#d9eee5;--red:#a44035;--red-soft:#f6e2dc;--violet:#684c9c;--violet-soft:#eae3f4;--blue:#376da0;--ochre:#97651e;--white:#fff}
+@media(prefers-color-scheme:dark){:root{--paper:#132125;--ink:#e8efeb;--muted:#aabdb9;--line:#3b5053;--soft:#203337;--teal:#88d7bb;--teal-soft:#22463d;--red:#f5ac9d;--red-soft:#512f2c;--violet:#c8b1f0;--violet-soft:#3d3451;--blue:#9dbde2;--ochre:#e0bd85;--white:#18292d}}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input{font:inherit}button,a,input{touch-action:manipulation}button{cursor:pointer;color:inherit}button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--violet);outline-offset:3px}a{color:var(--teal);text-underline-offset:3px}main{max-width:1080px;margin:0 auto;padding:36px 32px 64px}.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}h1{font-family:Georgia,serif;font-size:40px;line-height:1.13;font-weight:400;letter-spacing:-.025em;margin:0 0 16px}header>p:last-child{max-width:760px;color:var(--muted);margin:0 0 26px}h2,h3,p{margin-top:0}.chapter-nav{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:12px;margin:0 0 16px}.chapter-nav button{background:none;border:0;padding:8px 12px;border-radius:4px;font-size:14px}.chapter-nav button[aria-current=step]{background:var(--ink);color:var(--paper)}.chapter-nav button span{color:var(--muted);margin-right:6px}.chapter-nav button[aria-current=step] span{color:inherit}.transport{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}.transport button,.secondary{border:1px solid var(--line);background:var(--white);border-radius:5px;padding:8px 13px;min-height:40px}.transport #play{background:var(--ink);color:var(--paper);border-color:var(--ink);min-width:94px}.transport button:disabled{opacity:.4;cursor:default}.seek-label{display:flex;align-items:center;gap:12px;flex:1;min-width:170px}.seek-label input{width:100%;accent-color:var(--teal);min-width:50px}#clock{font-variant-numeric:tabular-nums;font-size:12px;color:var(--muted);white-space:nowrap}.scene{padding:24px 0 18px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.scene-heading{display:flex;gap:16px;align-items:baseline;margin-bottom:8px}.scene-heading .ordinal{font-size:12px;letter-spacing:.08em;color:var(--teal);white-space:nowrap}.scene h2{font:400 28px/1.2 Georgia,serif;letter-spacing:-.015em;margin:0}.scene-deck{color:var(--muted);max-width:850px;margin:0 0 24px;min-height:24px}.scene-columns{display:grid;grid-template-columns:minmax(290px,.96fr) minmax(340px,1.04fr);gap:38px;align-items:start}.board-figure{margin:0;min-width:0}.board-figure svg{width:100%;height:auto;display:block;overflow:visible}.board-figure figcaption{font-size:13px;color:var(--muted);margin:10px 0 0;min-height:40px}.board-cell{fill:var(--white);stroke:var(--line);stroke-width:1}.board-cell.forbidden{fill:var(--soft)}.board-cell.used{opacity:.3}.board-cell.component0{fill:color-mix(in srgb,var(--blue) 13%,var(--white))}.board-cell.component1{fill:color-mix(in srgb,var(--ochre) 14%,var(--white))}.board-cell.component2{fill:color-mix(in srgb,var(--teal) 13%,var(--white))}.cross{fill:var(--muted);font:15px Arial,sans-serif}.axis{fill:var(--muted);font:13px Arial,sans-serif}.mark{fill:var(--teal)}.mark.bad{fill:var(--red)}.ring{fill:var(--violet-soft);stroke:var(--violet);stroke-width:2.5}.ring.bad{fill:var(--red-soft);stroke:var(--red)}.ring-label{fill:var(--violet);font:600 13px Arial,sans-serif;text-anchor:middle}.ring-label.bad{fill:var(--red)}.equation{margin:16px 0;color:var(--ink);overflow-x:auto;font-size:20px;min-height:28px}.equation math{font-size:1em}.equation.small{font-size:17px}.math-side{min-width:0;min-height:375px}.math-side h3{font-size:14px;font-weight:500;color:var(--muted);margin:0 0 12px}.pair-stat{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 12px}.pair-stat button{background:transparent;border:1px solid var(--line);border-radius:4px;padding:7px 10px;text-align:left;font-size:12px}.pair-stat strong{display:block;font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}.pair-stat button.active{border-color:var(--ink);background:var(--soft)}.pair-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;max-width:320px;margin:12px 0}.pair-tile{aspect-ratio:1.8;background:var(--teal-soft);border:1px solid color-mix(in srgb,var(--teal) 45%,var(--line));transition:opacity .4s,background .4s}.pair-tile.rejected{background:var(--red-soft);border-color:var(--red)}.pair-tile.removed{opacity:.16;background:var(--soft);border-color:var(--line)}.micro{font-size:12px;color:var(--muted);margin:0 0 10px}.note{font-size:14px;line-height:1.5;margin:15px 0 0}.callout{padding:12px 15px;border-left:3px solid var(--teal);background:var(--soft);margin:18px 0;font-size:14px}.big-number{font:400 46px/1.1 Georgia,serif;font-variant-numeric:tabular-nums;margin:12px 0}.big-number span{font:14px/1.4 -apple-system,BlinkMacSystemFont,sans-serif;color:var(--muted);display:block;margin:8px 0}.choice-chain{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:22px 0}.choice-chain span{display:inline-grid;place-items:center;border:1px solid var(--line);width:40px;height:44px;border-radius:4px;font-size:22px;color:var(--muted)}.choice-chain span.done{background:var(--teal-soft);border-color:var(--teal);color:var(--ink)}.choice-chain i{font-style:normal;color:var(--muted);font-size:14px}.ledger{margin:12px 0}.ledger-line{display:grid;grid-template-columns:1fr 50px;gap:8px;border-bottom:1px solid var(--line);padding:8px 6px;font-size:14px;opacity:.35}.ledger-line.visible{opacity:1}.ledger-line.current{background:var(--soft)}.ledger-line b{text-align:right;font-variant-numeric:tabular-nums;font-weight:500}.ledger-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;font-size:14px}.ledger-total strong{font:400 38px/1 Georgia,serif}.sum-table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}.sum-table th{font-weight:500;color:var(--muted);font-size:11px}.sum-table td,.sum-table th{padding:4px 7px;text-align:right;border-bottom:1px solid var(--line)}.sum-table th:first-child,.sum-table td:first-child{text-align:left}.sum-table tr.pending{opacity:.38}.sum-table tr.current{background:var(--teal-soft)}.sum-result{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px}.sum-result span{font-size:13px;color:var(--muted)}.sum-result strong{font:400 32px/1 Georgia,serif;font-variant-numeric:tabular-nums}.definition{display:flex;gap:14px;align-items:center;margin:18px 0;font-size:15px}.definition .symbol{font:italic 30px Georgia,serif;min-width:42px}.component-options{display:grid;grid-template-columns:1fr 1fr;gap:6px}.component-options button{padding:10px;background:var(--white);border:1px solid var(--line);border-radius:4px;text-align:left;font-size:13px}.component-options button[aria-pressed=true]{background:var(--soft);border-color:var(--teal)}.component-options strong{float:right;font-weight:500}.after-scene{display:flex;gap:16px;justify-content:space-between;align-items:center;margin:18px 0 28px;font-size:13px;color:var(--muted)}.after-scene p{margin:0;max-width:660px}.after-scene button{white-space:nowrap;font-size:13px}.reading{max-width:780px;margin:32px auto 0}.reading summary{cursor:pointer;color:var(--teal);padding:12px 0}.reading .prose{font-size:15px;padding:12px 0}.reading h3{font:400 24px Georgia,serif;margin:25px 0 12px}.reading .equation{font-size:18px}.reader-note{font-size:12px;color:var(--muted);margin-top:25px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}
+@media(max-width:720px){main{padding:22px 16px 40px}h1{font-size:32px}.scene-columns{grid-template-columns:1fr;gap:20px}.board-figure{max-width:410px;width:100%;margin:auto}.scene h2{font-size:25px}.scene-heading{gap:10px}.scene-deck{font-size:14px;margin-bottom:16px;min-height:42px}.chapter-nav{gap:1px}.chapter-nav button{font-size:12px;padding:8px}.transport{gap:6px}.transport button{padding:8px 10px}.math-side{min-height:0}.scene{padding-top:18px}.pair-grid{max-width:100%;grid-template-columns:repeat(15,1fr)}.pair-tile{aspect-ratio:1.7}.pair-stat{grid-template-columns:repeat(4,1fr)}.pair-stat button{font-size:10px;padding:6px}.pair-stat strong{font-size:21px}.after-scene{align-items:start;flex-direction:column}.equation{font-size:19px}.choice-chain{gap:6px}.choice-chain span{width:36px}.board-figure figcaption{min-height:0}.math-side h3{margin-bottom:8px}.sum-table td,.sum-table th{padding:4px 6px}.big-number{font-size:38px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+.capture{color-scheme:light;background:#fcfcfa}.capture main{padding:20px 24px;max-width:none}.capture header,.capture .chapter-nav,.capture .transport,.capture .after-scene,.capture .reading{display:none}.capture .scene{padding:0;border:0}.capture .scene-heading{margin:0 0 8px}.capture .scene-deck{margin-bottom:18px;font-size:14px}.capture .scene-columns{gap:25px;grid-template-columns:minmax(280px,.9fr) minmax(300px,1.1fr)}.capture .scene h2{font-size:26px}.capture .math-side{min-height:0}.capture .scene-columns>.board-figure{max-width:380px}.capture .equation{font-size:19px}.capture .board-figure figcaption{font-size:12px}.capture .pair-tile{transition:none}.capture .note{font-size:13px}.capture .callout{font-size:13px;margin:12px 0}.capture .pair-grid{max-width:320px}.capture .sum-table td,.capture .sum-table th{padding:3px 6px}
+@media(max-width:720px){.capture main{padding:16px}.capture .scene h2{font-size:23px}.capture .scene-heading{gap:10px}.capture .scene-deck{font-size:13px;min-height:38px}.capture .scene-columns{grid-template-columns:1fr;gap:14px}.capture .board-figure{max-width:300px}.capture .board-figure figcaption{font-size:11px;margin-top:5px}.capture .pair-grid{max-width:100%;gap:3px}.capture .pair-stat{margin-bottom:5px}.capture .micro{font-size:11px}.capture .equation{font-size:18px;margin:10px 0}.capture .big-number{font-size:34px}.capture .definition{margin:12px 0}.capture .note{font-size:12px}.capture .callout{padding:8px 12px;font-size:12px}.capture .choice-chain{margin:14px 0}.capture .ledger-line{padding:6px}.capture .sum-result strong{font-size:28px}}
+</style>
+<style>.transport{position:sticky;top:0;z-index:3;background:var(--paper);padding:8px 0}.embedded header{display:none}.embedded main{padding-top:18px}@media(max-width:720px){.capture .board-figure{max-width:340px}.capture[data-chapter="4"] .board-figure{max-width:275px}}.axis{font-size:14px}</style>
+</head>
+<body>
+<main>
+<header><p class="eyebrow">Latin Rectangles · A mathematical walkthrough</p><h1>Counting legal third rows</h1><p>Count one more row without listing every possibility. Follow the forbidden assignments into a rook count, then watch inclusion–exclusion keep exactly the legal rows.</p></header>
+<nav class="chapter-nav" aria-label="Explanation chapters"></nav>
+<div class="transport"><button id="play" type="button">Play</button><button id="previous" type="button" aria-label="Previous chapter">←</button><button id="next" type="button" aria-label="Next chapter">→</button><label class="seek-label"><span class="sr-only">Playback position</span><input id="seek" type="range" min="0" max="62" step="0.1" value="0"><span id="clock">0:00 / 1:02</span></label></div>
+<section class="scene" aria-labelledby="scene-title"><div class="scene-heading"><span id="ordinal" class="ordinal"></span><h2 id="scene-title"></h2></div><p id="scene-deck" class="scene-deck"></p><div class="scene-columns"><figure class="board-figure"><svg id="board" viewBox="0 0 380 358" role="img" aria-labelledby="board-title board-desc"></svg><figcaption id="board-caption"></figcaption></figure><div class="math-side" id="math-side"></div></div></section>
+<p id="announcement" class="sr-only" aria-live="polite"></p>
+<div class="after-scene"><p id="motion-note">Play at a reading pace, pause anywhere, or select a chapter. The board uses columns horizontally and symbols vertically.</p><button type="button" id="components" class="secondary">Why components multiply</button></div>
+<details class="reading"><summary>Read the mathematics without motion</summary><div class="prose">
+<h3>Count violations, then cancel them</h3><p>The two existing rows are the identity and π = [2,1,4,3,6,7,8,5]. Their 16 used positions are the forbidden board. A proposed row is a permutation, so selected forbidden assignments can coexist only when they share neither a column nor a symbol.</p><p>Let r<sub>j</sub> count selections of j nonattacking forbidden squares. A selection fixes j assignments and leaves (8−j)! unrestricted completions. These completions may have further violations.</p><div class="equation" data-math="generalIE"></div><p>A permutation with t &gt; 0 violations has total weight (1−1)<sup>t</sup> = 0. A permutation with none contributes one. Here the rook coefficients are (1,16,104,352,662,688,376,96,8), giving 4,744 legal third rows.</p>
+<h3>Components give the rook counts</h3><p>Disjoint graph components use disjoint columns and symbols. Choose a matching in each, then combine them: the number of choices multiplies and the numbers of rooks add.</p><div class="equation" data-math="componentProduct"></div><div class="equation" data-math="componentPolys"></div>
+<h3>The full library</h3><p>This example illustrates the specialized two-row structure. For general k-row starts, the same rook and inclusion–exclusion argument uses matchings in the forbidden bipartite graph; its components need not be cycles. Component matching is exponential in the largest component. Multiple added rows are ordered extensions and are intended for small-n exact work.</p><div class="equation" data-math="generalMatching"></div><p>Two-row cycle polynomials also admit Touchard’s reduction, using q<sub>ℓ</sub>(t) = t<sup>ℓ</sup>R<sub>ℓ</sub>(−1/t), with formal q<sub>0</sub> = 2. This is Touchard’s established counting identity. The current walkthrough explains the inclusion–exclusion mechanism; the README retains the full reversed-polynomial derivation and attribution.</p><div class="equation" data-math="touchard"></div>
+</div></details>
+</main>
+<script>
+const DATA=__SCENE_DATA__;
+const MATH=__MATH_DATA__;
+const starts=[0,10,22,36,50], durations=[10,12,14,14,12], total=62;
+const chapters=['Select','Count','Complete','Cancel','Total'];
+const $=id=>document.getElementById(id), eq=(key,small=false)=>`<div class="equation${small?' small':''}">${MATH[key]}</div>`;
+const ns='http://www.w3.org/2000/svg';
+let time=0,playing=false,last=null,frame=null,lastKey='',componentMode=false,componentCase=0;
+const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+const capture=new URLSearchParams(location.search).has('capture');
+if(capture)document.body.classList.add('capture');
+if(new URLSearchParams(location.search).has('embed'))document.body.classList.add('embedded');
+for(const node of document.querySelectorAll('[data-math]'))node.innerHTML=MATH[node.dataset.math];
+$('motion-note').textContent=reduced.matches?'Reduced motion is on. Chapters change without motion; Play advances the explanation with discrete states.':'Play at a reading pace, pause anywhere, or select a chapter. The board uses columns horizontally and symbols vertically.';
+$('board').innerHTML='<title id="board-title">The forbidden board</title><desc id="board-desc"></desc>';
+const cells=[],crosses=[],dots=[];
+function svg(tag,attrs,text){const n=document.createElementNS(ns,tag);for(const[k,v]of Object.entries(attrs))n.setAttribute(k,v);if(text!==undefined)n.textContent=text;$('board').append(n);return n;}
+const cell=36,x0=57,y0=38;
+svg('text',{x:201,y:15,'text-anchor':'middle',class:'axis'},'Column i');
+svg('text',{x:5,y:25,class:'axis'},'Symbol s');
+for(let i=0;i<8;i++){
+ svg('text',{x:x0+(i+.5)*cell,y:y0-9,'text-anchor':'middle',class:'axis'},i+1);
+ svg('text',{x:x0-14,y:y0+(i+.5)*cell+4,'text-anchor':'middle',class:'axis'},i+1);
+ for(let s=1;s<=8;s++){
+  const blocked=s===i+1||s===DATA.pi[i];
+  const rect=svg('rect',{x:x0+i*cell,y:y0+(s-1)*cell,width:cell,height:cell,class:'board-cell'+(blocked?' forbidden':'')});
+  const cross=svg('text',{x:x0+(i+.5)*cell,y:y0+(s-.5)*cell+5,'text-anchor':'middle',class:'cross',opacity:blocked?1:0},'×');
+  cells.push({rect,c:i+1,s,blocked});crosses.push({cross,c:i+1,s,blocked});
+ }
+}
+const marks=svg('g',{});
+function point(c,s){return{x:x0+(c-.5)*cell,y:y0+(s-.5)*cell};}
+function addMark(c,s,kind,label){const{x,y}=point(c,s),g=document.createElementNS(ns,'g');let el=document.createElementNS(ns,'circle');el.setAttribute('cx',x);el.setAttribute('cy',y);el.setAttribute('r',kind.includes('ring')?12:7);el.setAttribute('class',kind);g.append(el);if(label){el=document.createElementNS(ns,'text');el.setAttribute('x',x);el.setAttribute('y',y+4);el.setAttribute('class','ring-label'+(kind.includes('bad')?' bad':''));el.textContent=label;g.append(el);}marks.append(g);}
+function drawBoard({selected=[],row=[],filled=8,shade=false,bad=false,components=false,active=null,description=''}){
+ const usedCols=selected.map(a=>a[0]),usedSymbols=selected.map(a=>a[1]);
+ for(const n of cells){const component=n.c<3?0:n.c<5?1:2;n.rect.setAttribute('class','board-cell'+(n.blocked?' forbidden':'')+(shade&&(usedCols.includes(n.c)||usedSymbols.includes(n.s))?' used':'')+(components&&n.blocked?' component'+component:''));}
+ for(const n of crosses)n.cross.setAttribute('opacity',n.blocked?(shade&&(usedCols.includes(n.c)||usedSymbols.includes(n.s))?.3:1):0);
+ marks.replaceChildren();
+ let count=0;
+ row.forEach((s,i)=>{if(usedCols.includes(i+1))return;if(count++<filled)addMark(i+1,s,'mark'+((s===i+1||s===DATA.pi[i])?' bad':''));});
+ selected.forEach(([c,s],i)=>addMark(c,s,'ring'+(bad?' bad':''),String.fromCharCode(65+i)));
+ if(active!==null)for(let i=0;i<selected.length;i++)if(active!==i&&active!=='both')marks.children[marks.children.length-selected.length+i].setAttribute('opacity','.35');
+ $('board-desc').textContent=description;
+}
+const titles=['Select forbidden assignments that can coexist','Count the compatible selections','Fix two assignments. Complete the rest.','Follow one invalid row through cancellation','Only legal rows keep a weight of one'];
+const decks=['The × cells are used by two fixed rows. A new row uses each symbol once, one per column.','The coefficient r₂ counts pairs of nonattacking forbidden squares.','Each selected pair leaves six columns and six symbols to match.','The same row appears in overlapping sets. Trace its total weight.','Multiply each rook count by its completions, then alternate the signs.'];
+function selection(progress){
+ const conflict=progress>=.27&&progress<.64,selected=conflict?[[1,1],[1,2]]:DATA.selected_bad_assignments;
+ drawBoard({selected,bad:conflict,description:conflict?'The marked forbidden assignments both use column 1. No permutation can contain both.':'Forbidden assignments (1,1) and (3,4) use different columns and symbols and can coexist.'});
+ $('board-caption').textContent=conflict?'Both rings use column 1: this intersection is empty.':'Rings A and B mark selected violations, not a legal partial row.';
+ $('math-side').innerHTML=`<h3>Count rows containing the marked violations</h3>${eq('event')}<div class="definition"><span class="symbol">A</span><span>Column 1 uses symbol 1</span></div><div class="definition"><span class="symbol">B</span><span>Column ${conflict?'1 uses symbol 2':'3 uses symbol 4'}</span></div><div class="callout">${conflict?'These assignments conflict. A permutation cannot put two symbols in one column.':'These assignments can coexist. Their squares share neither a column nor a symbol.'}</div>${eq(conflict?'conflict':'selected')}<p class="note">We deliberately count violations now. Inclusion–exclusion will cancel the invalid rows later.</p>`;
+}
+function pairCount(progress){
+ const phase=Math.min(3,Math.floor(progress*4)),selected=phase===1?[[1,1],[1,2]]:phase===2?[[1,1],[2,1]]:DATA.selected_bad_assignments;
+ drawBoard({selected,bad:phase===1||phase===2,description:'Representative '+['unordered pair','pair sharing a column','pair sharing a symbol','compatible pair'][phase]+' of forbidden squares.'});
+ $('board-caption').textContent=['Choose two of the 16 marked forbidden squares.','Eight columns each contain one incompatible pair.','Eight symbols each occur in one incompatible pair.','104 pairs can coexist. The rings show one of them.'][phase];
+ const labels=['All unordered pairs','Share a column','Share a symbol','Compatible pairs'];
+ $('math-side').innerHTML=`<div class="pair-stat">${[120,8,8,104].map((v,i)=>`<button type="button" data-pair-phase="${i}" class="${phase===i?'active':''}"><strong>${i===1||i===2?'−':''}${v}</strong>${labels[i]}</button>`).join('')}</div><div class="pair-grid" role="img" aria-label="120 pair tiles: eight share a column, eight share a symbol, and 104 are compatible">${Array.from({length:120},(_,i)=>{let cl='pair-tile';if(i<8&&phase>=1)cl+=phase===1?' rejected':' removed';else if(i>=8&&i<16&&phase>=2)cl+=phase===2?' rejected':' removed';return`<span class="${cl}"></span>`;}).join('')}</div><p class="micro">Each tile represents one pair of forbidden squares.</p>${eq(phase===0?'choosePairs':phase===1?'minusColumns':phase===2?'minusSymbols':'rookTwo')}<p class="note">${phase<3?'Distinct squares cannot share both a column and a symbol, so the two rejected groups do not overlap.':'rⱼ counts selections of j nonattacking forbidden squares. Here r₀ = 1, r₁ = 16, and r₂ = 104.'}</p>`;
+ $('math-side').querySelectorAll('[data-pair-phase]').forEach(b=>b.onclick=()=>seek(10+(Number(b.dataset.pairPhase)+.25)*3));
+}
+function complete(progress){
+ const filled=Math.min(6,Math.floor(progress*7));
+ drawBoard({selected:DATA.selected_bad_assignments,row:DATA.permutation_with_exactly_those_two_violations,filled,shade:true,description:'Two fixed assignments leave six free columns and six free symbols. '+filled+' of six free assignments are displayed.'});
+ $('board-caption').textContent=`A and B stay fixed · ${filled} of 6 remaining assignments shown.`;
+ $('math-side').innerHTML=`<h3>Choices for the six remaining columns</h3><div class="choice-chain">${[6,5,4,3,2,1].map((v,i)=>`${i?'<i>×</i>':''}<span class="${i<filled?'done':''}">${v}</span>`).join('')}</div>${eq('sixFactorial')}<div class="big-number">720<span>permutations containing this selected pair</span></div><div class="callout">Complete the permutation freely. Further forbidden assignments are allowed in these 720 rows.</div>${eq('pairsCompletions')}<p class="note">The same 6! completions accompany each of the 104 compatible pairs.</p>`;
+}
+function cancel(progress){
+ const stage=Math.min(3,Math.floor(progress*4)),weights=[1,0,-1,0],labels=['All permutations','Contains A','Contains B','Contains A and B'];
+ drawBoard({selected:DATA.selected_bad_assignments,row:DATA.permutation_with_exactly_those_two_violations,bad:true,active:stage===1?0:stage===2?1:'both',description:'Permutation [1,3,4,2,7,8,5,6] has exactly two violations. Its current inclusion-exclusion weight is '+weights[stage]+'.'});
+ $('board-caption').textContent='σ = [1,3,4,2,7,8,5,6] has exactly the two marked violations.';
+ $('math-side').innerHTML=`<h3>One row, counted in overlapping sets</h3><div class="ledger">${labels.map((v,i)=>`<div class="ledger-line ${i<=stage?'visible':''} ${i===stage?'current':''}"><span>${v}</span><b>${[1,-1,-1,1][i]>0?'+':''}${[1,-1,-1,1][i]}</b></div>`).join('')}</div><div class="ledger-total"><span>${stage===3?'Final weight of this invalid row':'Weight so far'}</span><strong>${weights[stage]<0?'−1':weights[stage]}</strong></div>${eq(['cancelZero','cancelOne','cancelTwo','cancellation'][stage])}<div class="callout">${['Count the row once among all 8! permutations.','Subtract rows containing A. This row loses one copy.','It also contains B. Subtract again: its weight is now −1.','Add the pair intersection back. Its weight returns to zero.'][stage]}</div><p class="note">A row with t &gt; 0 violations has weight (1−1)<sup>t</sup> = 0. A legal row appears only in the initial count.</p>`;
+}
+function totalCount(progress){
+ const current=Math.min(8,Math.floor(progress*9)),done=progress>=.95,partial=DATA.inclusion_exclusion_terms.slice(0,current+1).reduce((a,b)=>a+b,0);
+ drawBoard({row:DATA.valid_rows_shown[0],description:'A legal permutation avoids all 16 forbidden positions and contributes a weight of one.'});
+ $('board-caption').textContent='This row avoids every ×. Its weight is one.';
+ const f=n=>n.toLocaleString('en-US').replace('-','−');
+ $('math-side').innerHTML=`<table class="sum-table"><thead><tr><th>j</th><th>rⱼ</th><th>(8−j)!</th><th>Signed term</th></tr></thead><tbody>${DATA.rook_coefficients.map((r,j)=>`<tr class="${j>current?'pending':''} ${j===current?'current':''}"><td>${j}</td><td>${f(r)}</td><td>${f(DATA.factorials[8-j])}</td><td>${DATA.inclusion_exclusion_terms[j]>=0?'+':''}${f(DATA.inclusion_exclusion_terms[j])}</td></tr>`).join('')}</tbody></table><div class="sum-result"><span>${done?'Legal third rows':'Partial alternating sum'}</span><strong>${f(partial)}</strong></div>${eq('generalIE',true)}<p class="note">${done?'All invalid rows cancel. Exactly 4,744 legal third rows remain.':'The alternating sum may go below zero before all correction terms are included.'}</p>`;
+}
+function showComponents(){
+ const options=DATA.component_options,chosen=options[componentCase];
+ drawBoard({selected:chosen.example,components:true,description:'The forbidden board has three components using disjoint columns and symbols. Selected distribution '+chosen.distribution.join(',')+' has '+chosen.count+' choices.'});
+ $('board-caption').textContent='Components use symbols and columns {1,2}, {3,4}, and {5,6,7,8}.';
+ $('ordinal').textContent='EXPLORE';$('scene-title').textContent='Why independent components multiply';$('scene-deck').textContent='Disjoint columns and symbols let us combine a matching from each component freely.';
+ $('math-side').innerHTML=`${eq('componentProduct')}<h3>Distribute two rooks among three components</h3><div class="component-options">${options.map((o,i)=>`<button type="button" data-case="${i}" aria-pressed="${i===componentCase}">(${o.distribution.join(', ')}) rooks <strong>${o.count}</strong></button>`).join('')}</div>${eq('componentCoefficient',true)}<p class="note">${chosen.explanation} The rings show one such choice. Adding all six distributions gives the same r₂ = 104.</p>`;
+ $('math-side').querySelectorAll('[data-case]').forEach(b=>b.onclick=()=>{componentCase=Number(b.dataset.case);showComponents();});
+}
+const renderers=[selection,pairCount,complete,cancel,totalCount];
+function chapterFor(t){let i=starts.findLastIndex(s=>t>=s);return Math.max(0,i);}
+function render(force=false){
+ const chapter=chapterFor(time),progress=Math.min(1,(time-starts[chapter])/durations[chapter]);
+ document.body.dataset.chapter=chapter;
+ const quant=chapter===0?(progress<.27?0:progress<.64?1:2):chapter===1?Math.min(3,Math.floor(progress*4)):chapter===2?Math.min(6,Math.floor(progress*7)):chapter===3?Math.min(3,Math.floor(progress*4)):Math.min(9,Math.floor(progress*9.5));
+ const key=chapter+':'+quant+(chapter===4&&progress>=.95?':done':'');
+ if(!componentMode&&(force||key!==lastKey)){
+  $('ordinal').textContent=String(chapter+1).padStart(2,'0')+' / 05';$('scene-title').textContent=titles[chapter];$('scene-deck').textContent=decks[chapter];
+  renderers[chapter](progress);lastKey=key;
+ }
+ $('seek').value=time;$('clock').textContent=formatTime(time)+' / 1:02';
+ $('play').textContent=playing?'Pause':time>=total?'Replay':'Play';
+ document.querySelectorAll('[data-chapter]').forEach(b=>b.setAttribute('aria-current',!componentMode&&Number(b.dataset.chapter)===chapter?'step':'false'));
+ $('previous').disabled=chapter===0&&!componentMode;$('next').disabled=chapter===4&&!componentMode;
+}
+function formatTime(t){return Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');}
+function pause(){playing=false;last=null;if(frame!==null)cancelAnimationFrame(frame);frame=null;$('play').textContent=time>=total?'Replay':'Play';}
+function seek(t){pause();componentMode=false;time=Math.max(0,Math.min(total,t));render(true);$('announcement').textContent=titles[chapterFor(time)];}
+function tick(now){if(!playing)return;if(last!==null)time=Math.min(total,time+(now-last)/1000);last=now;render();if(time>=total){pause();render(true);return;}frame=requestAnimationFrame(tick);}
+$('play').onclick=()=>{if(playing){pause();return;}componentMode=false;if(time>=total)time=0;playing=true;last=null;$('play').textContent='Pause';render(true);frame=requestAnimationFrame(tick);};
+$('seek').oninput=e=>seek(Number(e.target.value));
+$('previous').onclick=()=>seek(starts[Math.max(0,chapterFor(time)-1)]);
+$('next').onclick=()=>seek(starts[Math.min(4,chapterFor(time)+1)]);
+$('components').onclick=()=>{pause();componentMode=true;showComponents();render();$('announcement').textContent='Explore why independent components multiply';};
+document.querySelector('.chapter-nav').innerHTML=chapters.map((c,i)=>`<button type="button" data-chapter="${i}" aria-current="${i===0?'step':'false'}"><span>${i+1}</span>${c}</button>`).join('');
+document.querySelectorAll('[data-chapter]').forEach(b=>b.onclick=()=>seek(starts[Number(b.dataset.chapter)]));
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pause();});
+window.addEventListener('message',event=>{if(event.source===parent&&event.data?.type==='latin-presentation-pause')pause();});
+window.latinPresentation={pause,seek,timeline:{starts,durations,total},getState:()=>({time,playing,chapter:chapterFor(time),componentMode}),showComponents:(i=0)=>{pause();componentMode=true;componentCase=i;showComponents();render();},data:DATA};
+render(true);
+</script>
+</body>
+</html>

@@ -33,6 +33,18 @@ uv run ruff format --check
 uv run latin-rectangles --n 42
 ```
 
+## Tests and benchmarks
+
+```console
+uv run --frozen pytest -q
+uv run --frozen benchmarks/verify_and_benchmark.py
+```
+
+The benchmark runner checks correctness before recording timings and writes
+its results to the ignored `benchmark_results/verification.json` file.
+The independent references and regression tests remain committed under
+`benchmarks/` and `tests/`.
+
 ## Releasing
 
 Releases are published by GitHub Actions from version tags. Do not publish to
@@ -56,6 +68,18 @@ PyPI deployment should require manual approval.
 
 1. Merge the release/version change to `main`.
 2. Tag the merged commit with the exact version in `pyproject.toml`.
+
+Before merging, update the version-pinned links in `PYPI_README.md` to the
+release tag and build both distributions. `README.md` is the full GitHub
+presentation; `PYPI_README.md` uses a static PNG and absolute links so package
+index rendering does not depend on GitHub's mathematics or local asset paths.
+Check the package description with `uvx twine check --strict dist/*`.
+
+All files under `docs/evidence/` and `.release-review/`, along with
+`docs/workflow-audit.md` and `docs/verification-case-study.md`, are local working
+records, ignored by Git and excluded from both distributions. Public
+documentation links to the committed tests and reproduction commands.
+Published presentation assets live under `docs/assets/` and remain tracked.
 
 ```bash
 git switch main
