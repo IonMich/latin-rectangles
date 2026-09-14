@@ -1,144 +1,73 @@
-# Complexity Analysis
+# Historical scaling measurements
 
-## Overview
+The [stored benchmark data](benchmark_results.json) records 797 measurements,
+one random derangement for each n from 4 through 800, dated 6 June 2025. It
+captures the specialized one-row counter used at that time. The measurements
+predate the current release and its method-selection changes.
 
-This document presents a comprehensive complexity analysis of the Latin rectangles extension counting algorithm. The analysis is based on empirical benchmarking data collected across problem sizes from n=4 to n=800.
+Over that sample, recorded runtimes ranged from **25.6 μs to 276 ms**, and the
+largest answer, at n=800, had **1,977 decimal digits**. The fitted runtime trend
+was approximately proportional to n² over the measured range.
 
-**Dataset:** 797 benchmark measurements  
-**Algorithm:** Latin rectangle extension counting via rook polynomials and cycle decomposition  
-**Analysis Date:** June 6, 2025
+For dated comparisons of the current method families and commands for fresh
+measurements, see [benchmarks and computational costs](docs/benchmarks.md).
 
-## Summary
+## Recorded measurements and fitted trends
 
-The algorithm exhibits quadratic time complexity O(n^2.009) and sub-linear memory complexity O(n^1.360), demonstrating excellent scalability characteristics for combinatorial enumeration problems across an extensive range of problem sizes.
+The fits below have been checked against the stored data using
+`fit_power_model` in [complexity_analysis.py](complexity_analysis.py). This
+recomputes a regression on existing measurements; it does not time the current
+implementation.
 
-## Time Complexity
+| Quantity | Recorded range | Historical power fit | R² in log space |
+|---|---|---|---:|
+| Runtime | 25.6 μs–276 ms | T(n) ≈ 2.945 × 10⁻⁷ n<sup>2.009</sup> seconds | 0.9812 |
+| Peak traced allocation | 0.516–315.4 KiB | M(n) ≈ 2.469 × 10⁻⁵ n<sup>1.360</sup> MiB | 0.9790 |
 
-### Empirical Analysis
+The JSON field is named `memory_peak_mb`, but the
+[benchmark implementation](benchmark.py) divides bytes by 1024², so its unit
+is **MiB**. Memory is measured with `tracemalloc` during a counted call. It
+measures traced allocations, not total process memory or allocations already
+present when tracing starts. Timing also includes the cost of tracing.
 
-The time complexity analysis was performed on 797 data points spanning n=4 to n=800.
+## How to interpret the fits
 
-- **Time Range:** 25.6μs to 276ms
-- **Growth Factor:** 10,770× across the tested range
-- **Performance:** Maintains sub-second execution for all tested values
+- The exponent 2.009 describes a near-quadratic empirical trend over this
+  sample. It does not prove an O(n²) runtime bound or predict every cycle type.
+- The exponent 1.360 is **superlinear and subquadratic**. The earlier report's
+  description of it as “sub-linear” was incorrect.
+- The fitter regresses log(y) against log(n), so these R² values describe the
+  log-transformed response. They cannot be ranked directly against the
+  original-scale R² values of the linear and logarithmic fits previously shown.
+- Arithmetic-operation bounds and measured wall time describe different
+  quantities. Large integer multiplication, coefficient construction and cache
+  state affect the time and memory of exact counting.
 
-### Model Fitting Results
+## Measurement scope
 
-| Model | R² Score | Formula |
-|-------|----------|---------|
-| **Power** | **0.9812** | **T(n) ≈ 2.95×10⁻⁷ × n^2.009** |
-| Linear | 0.8625 | T(n) ≈ 2.94×10⁻⁴n - 4.48×10⁻² |
-| Logarithmic | 0.5244 | T(n) ≈ 5.65×10⁻²log(n) - 2.49×10⁻¹ |
+The stored metadata contains a timestamp and record count; it does not record
+hardware, OS/Python versions, a source commit, random seed or cache protocol.
+There is one saved observation per n and no per-input timing sample series.
+The data therefore does not support claims of controlled hardware conditions,
+repeated-run averages, timing uncertainty or a universal crossover point.
 
-### Analysis
+The sampled cycle structure changes with n. That makes the fitted curve a
+summary of this set of inputs, rather than a fixed-family or worst-case bound.
+Use the separate fixed-family and exhaustive-cycle benchmarks to study those
+questions. The historical memory fit does not establish a bound on the current
+implementation's caches or on the general k-row algorithm.
 
-The power law model provides the best fit (R² = 0.9812) with an exponent of 2.009, indicating near-quadratic scaling. This represents a significant improvement over naive factorial-time approaches and demonstrates the effectiveness of the rook polynomial methodology, with the algorithm approaching quadratic complexity at very large scales while maintaining excellent performance.
+## Result magnitude and comparisons
 
-## Memory Complexity
+The recorded extension counts are exact integers. The earlier exponential
+curve for their magnitude is omitted: the analysis routine substitutes a
+proxy when an integer cannot be converted to a float, then mixes those proxies
+with ordinary count values. That fitted curve does not reliably describe count
+growth. The short-range factorial fit likewise does not establish an
+asymptotic law.
 
-### Empirical Analysis
-
-Memory consumption analysis across the same 797 data points shows efficient space utilization.
-
-- **Memory Range:** 0.5KB to 308KB
-- **Growth Factor:** 612× across the tested range
-- **Efficiency:** Maintains minimal memory footprint throughout
-
-### Model Fitting Results
-
-| Model | R² Score | Formula |
-|-------|----------|---------|
-| **Power** | **0.9790** | **M(n) ≈ 2.47×10⁻⁵ × n^1.360** |
-| Linear | 0.9183 | M(n) ≈ 3.21×10⁻⁴n - 3.10×10⁻² |
-| Logarithmic | 0.6273 | M(n) ≈ 6.55×10⁻²log(n) - 2.76×10⁻¹ |
-
-### Analysis
-
-The power law model achieves excellent fit (R² = 0.9790) with an exponent of 1.360, indicating sub-linear memory scaling. The algorithm maintains efficient memory usage patterns essential for practical applications, with memory growth significantly slower than quadratic.
-
-## Result Magnitude Analysis
-
-### Growth Characteristics
-
-The algorithm computes extension counts that grow exponentially with problem size.
-
-- **Result Range:** 2.00 to extremely large values (up to hundreds of digits)
-- **Growth Factor:** Astronomical growth across the tested range
-
-### Model Fitting Results
-
-| Model | R² Score | Formula |
-|-------|----------|---------|
-| **Exponential** | **0.2510** | **Extensions ≈ 7.57×10⁹² × 0.705^n** |
-| Factorial | 1.0000* | Extensions ≈ 1.03×10⁻¹ × (n!)^1.007 |
-
-*Perfect fit for n ≤ 20
-
-### Analysis
-
-While result magnitudes grow exponentially, the algorithm maintains near-quadratic computation time, demonstrating exceptional efficiency in computing large combinatorial values. The factorial model provides perfect fit for smaller values, while larger values show complex growth patterns that challenge simple exponential models.
-
-## Performance Characteristics
-
-### Scalability Profile
-
-The algorithm exhibits excellent scalability across the tested range:
-
-- **n ≤ 50:** Sub-millisecond execution (< 1ms)
-- **n ≤ 200:** Fast execution (< 10ms)
-- **n ≤ 500:** Efficient execution (< 100ms)
-- **n ≤ 800:** Manageable execution (< 300ms)
-
-### Comparative Analysis
-
-The algorithm significantly outperforms theoretical worst-case approaches:
-
-- **vs O(n!):** Exponentially faster for all practical values
-- **vs O(n³):** ~30× faster than cubic scaling at large n
-- **vs O(n²):** Approaches but does not exceed quadratic performance
-
-## Implementation Efficiency
-
-### Algorithmic Strengths
-
-1. **Mathematical Foundation:** Leverages rook polynomial theory for efficient computation
-2. **Cycle Decomposition:** Exploits derangement structure to reduce complexity
-3. **Memory Management:** Maintains minimal memory footprint with efficient data structures
-4. **Numerical Stability:** Handles large integer arithmetic without precision loss
-
-### Technical Characteristics
-
-- **Average Time per Operation:** 132μs across all test cases
-- **Memory Efficiency:** < 308KB for largest tested cases
-- **Numerical Range:** Handles results with hundreds of digits
-- **Consistency:** Stable performance across all problem sizes
-
-## Methodology
-
-### Data Collection
-
-Benchmarks were collected using a systematic approach:
-
-- **Environment:** Controlled testing environment with consistent system resources
-- **Measurement:** High-precision timing using system performance counters
-- **Validation:** Multiple runs per data point with statistical averaging
-- **Range:** Comprehensive coverage from small (n=4) to very large (n=800) problem sizes
-
-### Statistical Analysis
-
-Model fitting employed least-squares regression with coefficient of determination (R²) for goodness-of-fit evaluation. The power law model consistently provided the best fit for both time and memory complexity patterns.
-
-## Conclusions
-
-The Latin rectangles extension counting algorithm demonstrates:
-
-- **Time Complexity:** O(n^2.009) near-quadratic scaling
-- **Memory Complexity:** O(n^1.360) sub-linear scaling
-- **Practical Performance:** Sub-second execution for problem sizes up to n=800
-- **Scalability:** Maintains efficiency across an extensive range of problem sizes
-
-The algorithm's performance characteristics make it suitable for production use in combinatorial enumeration applications requiring both accuracy and efficiency, with excellent scalability demonstrated up to n=800.
-
----
-
-*Analysis based on 797 empirical measurements across problem sizes n=4 to n=800*
+No factorial-time or cubic-time implementation was timed in this dataset.
+Consequently, claims such as “30× faster than cubic scaling” cannot be inferred
+from these fits. The measured method comparisons in
+[docs/benchmarks.md](docs/benchmarks.md#measured-method-comparisons) use explicit
+baselines on the same inputs and cache conditions.

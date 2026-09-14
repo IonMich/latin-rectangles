@@ -9,6 +9,56 @@ hashes, input parameters and machine metadata to the ignored local file
 the run before that file is replaced. The scaling tools below provide broader
 workload exploration.
 
+## Measured method comparisons
+
+The following historical measurements were recorded on 7 September 2026 with
+an Apple M2 (8 logical CPUs, 16 GiB RAM), macOS 26.6.2, CPython 3.12.9 and
+uv 0.8.2. Times are medians of seven samples in milliseconds. These are
+selected workloads from the verification runner; no new benchmark run is
+claimed here.
+
+| Workload | Cache | Baseline | Candidate | Baseline ms | Candidate ms |
+|---|---|---|---|---:|---:|
+| Two 256-cycles, n=512 | cold | Rook | Touchard | 12.9962 | 5.2775 |
+| Cycles [3,5] plus 125 transpositions, n=258 | warm | Rook | Touchard | 3.9250 | 0.7011 |
+| Same n=258 cycle type | cold | Rook | Touchard | 3.9824 | 28.8683 |
+| Polynomial product: 1024×1024 signed 8-bit coefficients | cold | Schoolbook | NTT/CRT | 61.9447 | 13.4221 |
+
+Touchard is 2.46× faster for the cold two-cycle input and 5.60× faster for the
+warm mixed input, but slower for that mixed input with cold caches. The 4.62×
+NTT/CRT gain is for the synthetic polynomial product. All sampled Latin-counting
+rook products used schoolbook fallback, so this is not an end-to-end
+Latin-rectangle speedup.
+
+Cold samples clear all four library caches. Warm samples clear them and call
+the same method once before timing. Method order rotates across repetitions;
+input setup, reference calculations, equality checks and hashing are outside
+the timer. This was one host and process, with GC enabled, no CPU pinning or
+frequency control, and no memory measurement. Rerun the command above to
+generate fresh samples for your workload; raw run records remain local.
+
+## Computational costs and limits
+
+Let n be the number of columns and c the number of permutation cycles. The
+operation counts below describe algorithm stages; Python integer operations
+become more expensive as coefficients and answers grow.
+
+| Stage | Cost and practical limit |
+|---|---|
+| Schoolbook combination of cycle polynomials | O(n²) coefficient additions/multiplications in total. Generating the component coefficients and applying inclusion–exclusion also require integer arithmetic. |
+| Touchard subset-sum calculation | O(cn) loop iterations and O(n) count entries, followed by accumulation over reachable sums. Computing uncached one-cycle values can dominate the total time. |
+| One NTT polynomial product | O(qN log N) modular operations for transforms of length N over q primes, plus prime/root setup and CRT reconstruction. Growing coefficient bounds require more primes; the implementation may fall back to schoolbook. |
+| General k-row counting | Exponential in the largest forbidden component. Adding several rows also enumerates valid intermediate rows and is intended for small-n exact work. |
+
+The cold/warm comparison explains why one speedup or fitted exponent cannot
+describe every method and cycle type. The
+[historical scaling report](../COMPLEXITY_ANALYSIS_REPORT.md) retains the 2025
+observations with their measurement scope and units; empirical fits do not
+establish asymptotic bounds. See [the method derivations](methods.md) for the
+mathematical structure behind these algorithms.
+
+## Scaling benchmark tools
+
 This repository includes a CSV-first benchmark workflow for the specialized
 `2 x n -> 3 x n` methods:
 
@@ -204,6 +254,10 @@ The rook diagnostics report:
 - number of CRT prime convolutions actually used
 
 ### Initial `n=2048` Findings
+
+These earlier diagnostic observations predate the dated comparison above.
+Their tables do not record the full host and sampling protocol, so use them
+to understand the routing decisions rather than to compare timings across runs.
 
 The first diagnostic probe explains why the advanced paths did not dominate on
 `mixed_ladder`.
