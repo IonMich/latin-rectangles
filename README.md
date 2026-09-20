@@ -34,6 +34,25 @@ rows = [[0, 1, 2, 3, 4], [0, 2, 1, 4, 3], [0, 3, 4, 1, 2]]
 count_extensions(rows)  # 1 legal fourth row
 ```
 
+### Count all rectangles of a given size
+
+From a source checkout:
+
+```console
+uv run latin-rectangles total -r 4 -c 20
+```
+
+`-r` specifies rows and `-c` specifies columns. This counts every labeled
+4-row, 20-column Latin rectangle: rows are ordered, columns are labeled, and
+the symbols are `1, ..., 20`. The Python equivalent is
+`count_latin_rectangles(4, 20)` from `latin_rectangles`.
+
+Total counts use specialized recurrences for up to three rows and generalized
+Doyle inclusion-exclusion for larger heights. Cost grows steeply with the
+number of rows; this is intended for fixed, small heights. Use `total --help`
+for options, including `--full-output` for very large counts.
+[Algorithm and conventions](docs/methods.md#10-total-counts-by-dimensions)
+
 ## How it works
 
 ### Rows become forbidden positions
@@ -193,6 +212,7 @@ method above uses component matching polynomials directly.
 
 | Starting data | Function |
 |---|---|
+| Row and column counts | `count_latin_rectangles(rows, columns)` |
 | Explicit Latin-rectangle rows | `count_extensions(rows, rows_to_add=1)` |
 | Identity first row and a deranged second row | `count_extensions_from_derangement(p, rows_to_add=1)` |
 | Relative cycle lengths of two rows | `count_extensions_from_cycle_type(lengths, rows_to_add=1)` |

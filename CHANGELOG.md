@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Add `latin-rectangles total -r ROWS -c COLUMNS` and the Python API
+  `count_latin_rectangles(rows, columns)` for exact labeled total counts.
+  Use small-height recurrences and generalized Doyle inclusion-exclusion,
+  while retaining the existing extension-counting commands.
+
 ## 0.3.3 - 2026-09-14
 
 - Align empty polynomial multiplication across exact methods, protect cached
