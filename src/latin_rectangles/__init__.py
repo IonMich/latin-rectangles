@@ -11,6 +11,7 @@ from .extension_counting import (
     count_extensions_from_derangement,
 )
 from .general_extensions import count_extensions, count_next_row_extensions
+from .total_counting import count_latin_rectangles
 
 
 def count_random_extensions(n: int, *, rows_to_add: int = 1) -> int:
@@ -50,6 +51,7 @@ __all__ = [
     "count_extensions",
     "count_extensions_from_cycle_type",
     "count_extensions_from_derangement",
+    "count_latin_rectangles",
     "count_next_row_extensions",
     "count_random_extensions",
     "create_cycle_structure",

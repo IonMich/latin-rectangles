@@ -14,6 +14,7 @@ from .extension_counting import (
 from .extension_counting import (
     count_extensions_from_derangement,
 )
+from .total_counting import count_latin_rectangles
 
 _COUNT_SUMMARY_MODULUS = 1_000_000_007
 _DEFAULT_MAX_OUTPUT_DIGITS = 1_000
@@ -90,7 +91,7 @@ def _allow_integer_output_digits(digits: int) -> None:
 
 
 def _format_extension_count(value: int, *, max_digits: int, full_output: bool) -> str:
-    """Format an extension count safely for CLI output."""
+    """Format an integer count safely for CLI output."""
     if full_output:
         _allow_full_integer_output()
         return f"{value:,}"
@@ -249,16 +250,38 @@ def enumerate_all_extensions(
     return results
 
 
+def _add_output_arguments(
+    parser: argparse.ArgumentParser, *, inherit_defaults: bool = False
+) -> None:
+    """Share output controls without replacing values parsed before a subcommand."""
+    parser.add_argument(
+        "--max-digits",
+        type=_positive_int,
+        default=(argparse.SUPPRESS if inherit_defaults else _DEFAULT_MAX_OUTPUT_DIGITS),
+        help=(
+            "Maximum decimal digits to print exactly before summarizing a count "
+            f"(default: {_DEFAULT_MAX_OUTPUT_DIGITS})"
+        ),
+    )
+    parser.add_argument(
+        "--full-output",
+        action="store_true",
+        default=argparse.SUPPRESS if inherit_defaults else False,
+        help="Print the full decimal count even when it has thousands of digits",
+    )
+
+
 def main(argv: list[str] | None = None) -> None:
     """Parse CLI arguments and run. If argv is None, use sys.argv[1:]."""
     if argv is None:
         argv = sys.argv[1:]
 
     parser = argparse.ArgumentParser(
-        description="Latin Rectangles Extension Counter",
+        description="Latin Rectangles Counter: total labeled counts and extensions",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  %(prog)s total -r 4 -c 20  # Count all labeled 4-row, 20-column Latin rectangles
   %(prog)s --n 42             # Generate random derangement for n=42
   %(prog)s --c "2,2,4"        # Use specific cycle structure: two 2-cycles and one 4-cycle
   %(prog)s --c "3,4" --rows-to-add 2
@@ -281,25 +304,59 @@ Examples:
     parser.add_argument(
         "--rows-to-add",
         type=_non_negative_int,
-        default=1,
+        default=None,
         help="Number of further rows to add to the starting 2 x n rectangle",
     )
-    parser.add_argument(
-        "--max-digits",
-        type=_positive_int,
-        default=_DEFAULT_MAX_OUTPUT_DIGITS,
-        help=(
-            "Maximum decimal digits to print exactly before summarizing a count "
-            f"(default: {_DEFAULT_MAX_OUTPUT_DIGITS})"
+    _add_output_arguments(parser)
+    subcommands = parser.add_subparsers(dest="command")
+    total_parser = subcommands.add_parser(
+        "total",
+        allow_abbrev=False,
+        help="Count all labeled Latin rectangles of the given dimensions",
+        description=(
+            "Count all Latin rectangles with ordered rows, labeled columns, and "
+            "symbols 1 through the number of columns. Dimensions are non-negative; "
+            "an empty rectangle has count 1."
         ),
     )
-    parser.add_argument(
-        "--full-output",
-        action="store_true",
-        help="Print the full decimal count even when it has thousands of digits",
+    total_parser.add_argument(
+        "-r", "--rows", type=_non_negative_int, required=True, help="Number of rows"
     )
+    total_parser.add_argument(
+        "-c",
+        "--columns",
+        type=_non_negative_int,
+        required=True,
+        help="Number of columns and available symbols",
+    )
+    _add_output_arguments(total_parser, inherit_defaults=True)
 
     args = parser.parse_args(argv)
+
+    if args.command == "total":
+        if (
+            args.n is not None
+            or args.c is not None
+            or args.all
+            or args.rows_to_add is not None
+        ):
+            parser.error(
+                "total cannot be combined with --n, --c, --all, or --rows-to-add"
+            )
+        try:
+            count = count_latin_rectangles(args.rows, args.columns)
+        except ValueError as exc:
+            print(f"❌ Error: {exc}", file=sys.stderr)
+            sys.exit(1)
+        formatted_count = _format_extension_count(
+            count, max_digits=args.max_digits, full_output=args.full_output
+        )
+        print(f"Latin rectangles: {args.rows} rows, {args.columns} columns")
+        print(f"Total labeled count: {formatted_count}")
+        return
+
+    if args.rows_to_add is None:
+        args.rows_to_add = 1
 
     if args.n is not None and args.c is not None:
         print("❌ Error: Cannot specify both --n and --c arguments", file=sys.stderr)

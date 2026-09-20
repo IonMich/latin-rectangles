@@ -490,6 +490,7 @@ oracles rather than large-n production counts.
 
 | Task | Recommended path |
 | --- | --- |
+| Count all labeled rectangles of a given size | `count_latin_rectangles(rows, columns)` or CLI `total -r ROWS -c COLUMNS` |
 | Count from explicit rows | `count_extensions(rows, rows_to_add=...)` |
 | Count from a normalized second-row derangement | `count_extensions_from_derangement(permutation, rows_to_add=...)` |
 | Count from a cycle type | `count_extensions_from_cycle_type(cycle_lengths, rows_to_add=...)` |
@@ -499,3 +500,41 @@ oracles rather than large-n production counts.
 The methods are intentionally kept side by side. Touchard's identity is
 special to the `2 x n` case, while the general `k`-row method handles broader
 inputs at the cost of exponential worst-case behavior.
+
+## 10. Total counts by dimensions
+
+`count_latin_rectangles(k, n)` returns `L(k,n)`, the number of `k x n` Latin
+rectangles with ordered rows, labeled columns, and symbols `1, ..., n`.
+Each row is a permutation and each column has distinct symbols. The CLI is:
+
+```console
+latin-rectangles total -r 4 -c 20
+```
+
+Here `-r`/`--rows` and `-c`/`--columns` are required. Dimensions are
+nonnegative integers. An empty dimension gives one empty array; for positive
+width, more rows than columns gives zero. `--max-digits` and `--full-output`
+control count formatting as in the extension commands.
+
+The calculation fixes the first row temporarily, computes the normalized
+count `K(k,n)`, and restores all symbol labelings with `L(k,n) = n! K(k,n)`.
+For example, there are 24 normalized `4 x 4` rectangles and 576 labeled ones.
+These are different from the four reduced rectangles, which also fix the
+first column.
+
+One row uses `n!`; two rows use `n!` times the derangement count; three rows
+use Riordan's recurrence. Larger heights use the generalized Doyle formula
+proved in [Stones, Lin, Liu and Wang, *On Computing the Number of Latin
+Rectangles*](https://doi.org/10.1007/s00373-015-1643-1), equations (6)-(8).
+The calculation streams inclusion-exclusion terms using exact Python integers
+and reduces repeated work using row symmetry. It does not enumerate every
+rectangle. A final row of a Latin square is uniquely determined, so
+`L(n,n) = L(n-1,n)` for `n > 1`.
+
+Before symmetry reduction, the Doyle sum has
+`binomial(n + 2**(k-1) - 1, 2**(k-1) - 1)` terms. Thus fixed heights 4, 5
+and 6 have term counts growing as powers 7, 15 and 31 of the width. Evaluating
+each term also costs integer arithmetic; these exponents are not measured
+runtime fits. Fixed-height polynomial growth can still be expensive, and
+large heights are impractical. This total-count method complements the
+algorithms above, which count extensions of a supplied starting rectangle.
