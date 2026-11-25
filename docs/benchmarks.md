@@ -51,6 +51,7 @@ checkout status, CPU, platform, Python build and hash seed.
   and its elapsed time or eight-second worker timeout. Repeat a claimed gain.
   For two-row inputs, also report these quantities and the time multiplier on
   each width doubling from the [wide third-row benchmark](#width-scaling-for-exact-third-row-counts).
+  For row construction, use the [time-to-first-valid-row benchmark](#time-to-produce-one-valid-next-row).
 
 The comparison runs nine pairs per workload, rotates the case order and
 alternates which revision goes first. Each sample uses a fresh process.
@@ -409,3 +410,29 @@ three fresh-process calls is at most one second and the largest peak RSS is
 at most 256 MiB. The first miss ends that series. A worker has an eight-second
 wall-clock deadline including startup. Use `--repo /path/to/other/checkout`
 to compare another revision on the same machine with identical fixtures.
+
+## Time to produce one valid next row
+
+The witness workload times a single public call to `find_next_row(rows)`,
+including input validation. It verifies the returned permutation against
+every supplied column and checks that the input kept its original contents.
+Verification and fixture construction are outside the call timer.
+
+```console
+mkdir -p benchmark_results
+uv run --frozen python -m benchmarks.benchmark_find_next_row --output benchmark_results/witness.json
+uv run --frozen python -m benchmarks.benchmark_find_next_row --method legacy --repo /path/to/base --output benchmark_results/witness-base.json
+```
+
+The baseline calls `next(_iter_valid_next_rows(rows), None)`. Both methods
+receive the same independently seeded inputs. The four families cover two
+irregular rows, a half-filled rectangle, two rows remaining and one forced
+row. The taller fixtures shuffle columns, symbols and the selected rows.
+Even widths also use random legal two-by-two swaps.
+
+For each family, report median time to a verified row, peak process RSS, the
+time multiplier per width doubling and the largest width within one second
+and 256 MiB. Three seeds run in fresh processes per passing width. The
+eight-second worker deadline includes setup and verification. Each explicit
+fixture is limited to 4,194,304 cells. When a series reaches a configured
+ceiling, its largest passing width is a lower bound on capacity.

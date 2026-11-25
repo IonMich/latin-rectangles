@@ -34,6 +34,27 @@ rows = [[0, 1, 2, 3, 4], [0, 2, 1, 4, 3], [0, 3, 4, 1, 2]]
 count_extensions(rows)  # 1 legal fourth row
 ```
 
+### Find one legal next row
+
+From a source checkout, pass the existing rows to `find_next_row`. Each row
+starts with the library's indexing sentinel `0`.
+
+```python
+from latin_rectangles import find_next_row
+
+rows = [[0, 1, 2, 3, 4], [0, 2, 1, 4, 3], [0, 3, 4, 1, 2]]
+row = find_next_row(rows)         # [0, 4, 3, 2, 1]
+assert row is not None
+assert find_next_row([*rows, row]) is None  # The square is complete.
+```
+
+The returned row uses the original symbol labels. When several rows work, any
+one of them is a valid result. A positive-width Latin rectangle with fewer
+rows than columns always has an extension. Each column can be matched to a
+different symbol it has yet to use. The function leaves the input untouched
+and raises `ValueError` for an invalid rectangle. With zero columns, the
+unique next row is `[0]`, following the counting API's empty-row convention.
+
 ### Count all rectangles of a given size
 
 From a source checkout:
@@ -214,6 +235,7 @@ method above uses component matching polynomials directly.
 | Starting data | Function |
 |---|---|
 | Row and column counts | `count_latin_rectangles(rows, columns)` |
+| One legal next row from explicit rows | `find_next_row(rows)` |
 | Explicit Latin-rectangle rows | `count_extensions(rows, rows_to_add=1)` |
 | Identity first row and a deranged second row | `count_extensions_from_derangement(p, rows_to_add=1)` |
 | Relative cycle lengths of two rows | `count_extensions_from_cycle_type(lengths, rows_to_add=1)` |
