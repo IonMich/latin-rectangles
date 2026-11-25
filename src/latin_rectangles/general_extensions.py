@@ -211,6 +211,32 @@ def _derangement_number(n: int) -> int:
     return prev1
 
 
+def _count_two_rows_remaining(rows: list[list[int]], n: int) -> int:
+    """Count next rows of a validated (n-2) x n rectangle; the last row is forced."""
+    # Each column links its two available symbols. Contracting columns this way
+    # preserves the components of the allowed column-symbol graph.
+    symbols = set(range(1, n + 1))
+    neighbors: list[list[int]] = [[] for _ in range(n + 1)]
+    for column in range(1, n + 1):
+        first, second = symbols.difference(row[column] for row in rows)
+        neighbors[first].append(second)
+        neighbors[second].append(first)
+
+    cycles = 0
+    unseen = symbols.copy()
+    while unseen:
+        stack = [unseen.pop()]
+        cycles += 1
+        while stack:
+            for symbol in neighbors[stack.pop()]:
+                if symbol in unseen:
+                    unseen.remove(symbol)
+                    stack.append(symbol)
+
+    # Each even cycle in the original bipartite graph has two alternating matchings.
+    return 1 << cycles
+
+
 def _iter_valid_next_rows(rows: list[list[int]]) -> Iterator[list[int]]:
     """Yield all valid next rows extending the explicit Latin rectangle."""
     n = _validate_latin_rows(rows)
@@ -240,7 +266,8 @@ def count_next_row_extensions(rows: list[list[int]], *, use_fft: bool = False) -
 
     Notes:
         - With one existing row, this returns the derangement number in O(n).
-        - With multiple rows, exact worst-case time is exponential in the size
+        - With two rows remaining, count cycles of allowed positions in O(n^2).
+        - For other multiple-row inputs, exact worst-case time is exponential in the size
           of the largest orbit of <sigma2,...,sigmak> (as expected from
           #P-completeness).
         - It is fast on inputs whose orbits are small; otherwise it will be slow.
@@ -253,6 +280,8 @@ def count_next_row_extensions(rows: list[list[int]], *, use_fft: bool = False) -
         return 1  # empty permutation → exactly one empty extension
     if k == 1:
         return _derangement_number(n)
+    if k == n - 2:
+        return _count_two_rows_remaining(rows, n)
 
     std_rows = _standardize_rows(rows)
     # Generators for orbit computation exclude the first identity row
@@ -311,9 +340,9 @@ def count_extensions(
         The number of ordered ways to add the requested rows.
 
     Notes:
-        The ``rows_to_add=1`` path uses the component rook/matching-polynomial
-        counter. Larger values use direct recursion over valid next rows, which
-        is intended for small-n exact work and regression oracles.
+        When two rows remain, each legal next row has one completion, so both
+        extension counts follow from the cycles of the allowed graph. Other
+        multi-row counts use direct recursion over valid next rows.
         A zero-column start has one empty extension for any number of added rows.
     """
     _validate_rows_to_add(rows_to_add)
@@ -324,6 +353,8 @@ def count_extensions(
         return 0
     if rows_to_add == 1:
         return count_next_row_extensions(rows, use_fft=use_fft)
+    if rows_to_add == 2 and len(rows) == n - 2:
+        return _count_two_rows_remaining(rows, n)
 
     total = 0
     for next_row in _iter_valid_next_rows(rows):

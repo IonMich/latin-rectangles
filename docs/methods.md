@@ -421,7 +421,7 @@ For `k` existing rows, let the rows be permutations:
 sigma_1, sigma_2, ..., sigma_k.
 ```
 
-The first row may be non-identity. The implementation standardizes it by
+The first row may be non-identity. The forbidden-graph method standardizes it by
 relabeling symbols with `sigma_1^{-1}`, so the first row becomes identity.
 This does not change the number of valid extensions.
 
@@ -436,7 +436,13 @@ directly in `O(n)` using:
 !n = (n - 1)(!(n - 1) + !(n - 2)).
 ```
 
-The component matching dynamic program is used only when `k >= 2`.
+When `k = n - 2`, every column allows two symbols and every symbol is available
+in two columns. The allowed column-symbol graph therefore consists of disjoint
+even cycles. A legal next row chooses alternating edges on each cycle, with two
+independent choices per cycle. The unused edges give the unique final row.
+With `c` cycles, the count is `2^c` for both one and two added rows. Finding the
+allowed pairs takes `O(n^2)` time on the explicit rectangle. Counting their
+components takes `O(n)` time, with `O(n)` auxiliary space overall.
 
 For each column `j`, the forbidden symbols are:
 
@@ -477,12 +483,13 @@ Implementation mapping:
 | `_standardize_rows` | normalize the first row to identity |
 | `_compute_orbits` | find forbidden graph components via generated orbits |
 | `_component_matching_polynomial` | compute one component rook polynomial |
-| `count_next_row_extensions` | multiply components and apply inclusion-exclusion for one added row |
-| `count_extensions(rows, rows_to_add=...)` | use the one-row counter directly for `rows_to_add=1`, otherwise recurse over valid next rows |
+| `_count_two_rows_remaining` | count allowed cycles when two rows remain |
+| `count_next_row_extensions` | use the applicable shortcut or combine forbidden components by inclusion-exclusion |
+| `count_extensions(rows, rows_to_add=...)` | use the one-row counter, the two-rows-remaining shortcut, or recursion over valid next rows |
 
-Complexity is exponential in the largest component size, which is expected for
+The forbidden-graph dynamic program is exponential in the largest component size, which is expected for
 the general permanent/counting problem. It is practical when components/orbits
-are small. When `rows_to_add > 1`, direct recursion also enumerates valid
+are small. For other multi-row counts, direct recursion also enumerates valid
 intermediate rows, so it is intended for small-n exact work and regression
 oracles rather than large-n production counts.
 
