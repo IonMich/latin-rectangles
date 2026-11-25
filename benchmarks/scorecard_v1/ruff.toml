@@ -1,0 +1,6 @@
+extend = "../../pyproject.toml"
+
+# Preserve the published v1 runner hash and the fixture builder used at freeze.
+[lint.per-file-ignores]
+"scorecard.py" = ["B905", "I001"]
+"freeze_fixtures.py" = ["B905", "C408", "RUF001"]
