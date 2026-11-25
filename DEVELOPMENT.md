@@ -45,6 +45,10 @@ its results to the ignored `benchmark_results/verification.json` file.
 The independent references and regression tests remain committed under
 `benchmarks/` and `tests/`.
 
+For performance changes, include the [project scorecard](docs/benchmarks.md#project-scorecard-v1)
+in the PR. Report the four workload families, memory, batch throughput and
+capacity alongside any benchmark specific to the change.
+
 ## Releasing
 
 Releases are published by GitHub Actions from version tags. Do not publish to

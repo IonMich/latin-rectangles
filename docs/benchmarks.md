@@ -1,5 +1,79 @@
 # Benchmarking Algorithm Scaling
 
+## Project scorecard v1
+
+For a performance change, report all four families below. Name the workload
+expected to improve and one that could get slower. There is no measured mix
+of production traffic to justify averaging the four families into one score.
+
+| Family | Frozen public API workloads |
+|---|---|
+| Cycle types (5) | Cold and warm requests, two long cycles, an exhaustive batch of 88 types and a seeded batch of 32 types |
+| Explicit next row (6) | Relabeled rows, connected and disconnected forbidden boards, an irregular prefix, a forced row and a full square |
+| Ordered extensions (4) | Add two or three ordered rows to fixed prefixes, including near-complete squares |
+| Labeled totals (3) | Count all labeled rectangles at dimensions 3 × 7, 4 × 10 and 5 × 6 |
+
+Use the [frozen runner](../benchmarks/scorecard_v1/scorecard.py) on macOS or
+Linux. Run the full tests in clean baseline and candidate checkouts first.
+From the checkout containing the runner, replace the paths below with those
+two checkout roots. Run the commands in sequence on the same idle host,
+Python version and power setting.
+
+```console
+mkdir -p benchmark_results
+uv run --no-project --python 3.12 benchmarks/scorecard_v1/scorecard.py compare /path/to/base /path/to/candidate --output benchmark_results/compare.json
+uv run --no-project --python 3.12 benchmarks/scorecard_v1/scorecard.py capacity /path/to/base --output benchmark_results/base-capacity.json
+uv run --no-project --python 3.12 benchmarks/scorecard_v1/scorecard.py capacity /path/to/candidate --output benchmark_results/candidate-capacity.json
+uv run --no-project --python 3.12 benchmarks/scorecard_v1/report.py benchmark_results/compare.json --base-capacity benchmark_results/base-capacity.json --candidate-capacity benchmark_results/candidate-capacity.json
+```
+
+The last command prints the full comparison as Markdown. Omit either
+capacity argument when that ladder has yet to be measured. It checks both
+frozen file hashes and pairs each capacity report with its measured revision,
+checkout status, CPU, platform, Python build and hash seed.
+
+**Read the comparison across all of these metrics.**
+
+- **Exactness.** Every call, batch member and warm-up must produce the
+  expected integer. The [fixtures](../benchmarks/scorecard_v1/fixtures.json)
+  include the inputs, answers and independent reference used for each case.
+- **Latency and throughput.** Report baseline and candidate median
+  milliseconds and the median paired time ratio for each workload. For the
+  two batches, also report completed counts per second. Within each family
+  give the geometric mean of the paired case ratios and name the worst case.
+  A ratio below one means the candidate was faster.
+- **Memory.** Report the median whole-process peak RSS in MiB on both
+  revisions. For changes to a persistent cache, also measure memory as
+  distinct requests accumulate in a single process.
+- **Capacity.** The four-row totals ladder tests widths 8 through 28 in
+  steps of two. Give the last width passing a one-second median and 256 MiB
+  maximum peak RSS across three fresh workers, plus the first failing width
+  and its elapsed time or eight-second worker timeout. Repeat a claimed gain.
+  For two-row inputs, also report these quantities and the time multiplier on
+  each width doubling from the [wide third-row benchmark](#width-scaling-for-exact-third-row-counts).
+
+The comparison runs nine pairs per workload, rotates the case order and
+alternates which revision goes first. Each sample uses a fresh process.
+Timing covers the public request after import and fixture construction. A
+warm sample follows one identical untimed call. A batch starts cold and
+reuses its caches across its requests.
+
+Recheck a latency regression when the median paired slowdown exceeds 10%,
+the median increase exceeds 0.05 ms, **and** the candidate is slower in at
+least eight of nine pairs. Recheck a memory increase when it exceeds **both**
+20% and 8 MiB. Repeat flagged comparisons and report confirmed tradeoffs.
+Confirm a claimed improvement in a second session or on independent inputs.
+
+Keep the raw JSON alongside the revision identifiers, host, interpreter and
+fixture and runner SHA-256 hashes recorded in the report. Both revisions use
+the same checked-in fixtures. Their [builder](../benchmarks/scorecard_v1/freeze_fixtures.py)
+records their derivation using the reference implementations at `dc7b4f1`.
+Changing inputs, reference values, measurement rules, budgets or thresholds
+calls for a new scorecard version and one comparison against v1 on a common
+revision. Feature-specific experiments can accompany the frozen scorecard.
+
+## Method-level verification
+
 For a compact, correctness-gated benchmark with raw samples and machine metadata,
 use the [verification runner](../benchmarks/verify_and_benchmark.py):
 `uv run --frozen benchmarks/verify_and_benchmark.py`.
