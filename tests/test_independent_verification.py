@@ -1,6 +1,7 @@
 """Independent arithmetic/enumeration checks, including real route execution."""
 
 from itertools import permutations
+from math import comb, factorial
 from random import Random
 from unittest.mock import patch
 
@@ -135,6 +136,41 @@ def test_all_small_derangements_and_relabelled_general_boards() -> None:
                     count_next_row_extensions(one_indexed(relabelled), use_fft=use_fft)
                     == expected
                 )
+
+
+def test_wide_single_cycle_from_relabelled_rows() -> None:
+    n = 1024
+    # The forbidden board is a cycle of 2n edges. There are
+    # (2n)/(2n-k) * binom(2n-k, k) matchings of size k on that cycle.
+    expected = sum(
+        (-1) ** k * (2 * n * comb(2 * n - k, k) // (2 * n - k)) * factorial(n - k)
+        for k in range(n + 1)
+    )
+    rows = rows_for_cycles([n])
+    assert count_extensions_from_cycle_type([n]) == expected
+
+    rng = Random(1024)
+    columns = rng.sample(range(n), n)
+    labels = rng.sample(range(n), n)
+    relabelled = one_indexed([[labels[row[col]] for col in columns] for row in rows])
+    for use_fft in (False, True):
+        assert (
+            count_extensions_from_derangement(one_indexed(rows)[1], use_fft=use_fft)
+            == expected
+        )
+        assert count_next_row_extensions(relabelled, use_fft=use_fft) == expected
+    assert count_extensions(relabelled) == expected
+
+
+@pytest.mark.parametrize(
+    "lengths",
+    [[16] * 64, [16] * 65, [2, 3] * 205, [16, 32] * 22],
+    ids=["uniform-even", "uniform-odd", "mixed-odd-width", "mixed-shared-factor"],
+)
+def test_wide_cycle_multiplicities_against_rook_product(lengths: list[int]) -> None:
+    expected = count_extensions_from_cycle_type(lengths, method="rook")
+    assert count_extensions_from_cycle_type(lengths) == expected
+    assert count_next_row_extensions(one_indexed(rows_for_cycles(lengths))) == expected
 
 
 @pytest.mark.parametrize("lengths", [[], [2], [3], [2, 2], [2, 3]])

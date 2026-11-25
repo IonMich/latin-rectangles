@@ -23,6 +23,7 @@ from collections.abc import Iterator
 from functools import cache
 from itertools import permutations
 
+from .extension_counting import _count_next_from_valid_derangement
 from .rook_polynomials import multiply_polynomials, multiply_polynomials_fft
 
 
@@ -267,6 +268,7 @@ def count_next_row_extensions(rows: list[list[int]], *, use_fft: bool = False) -
     Notes:
         - With one existing row, this returns the derangement number in O(n).
         - With two rows remaining, count cycles of allowed positions in O(n^2).
+        - With two existing rows, count from their relative permutation cycles.
         - For other multiple-row inputs, exact worst-case time is exponential in the size
           of the largest orbit of <sigma2,...,sigmak> (as expected from
           #P-completeness).
@@ -284,6 +286,8 @@ def count_next_row_extensions(rows: list[list[int]], *, use_fft: bool = False) -
         return _count_two_rows_remaining(rows, n)
 
     std_rows = _standardize_rows(rows)
+    if k == 2:
+        return _count_next_from_valid_derangement(std_rows[1], use_fft=use_fft)
     # Generators for orbit computation exclude the first identity row
     generators = std_rows[1:]
     orbits = _compute_orbits(generators)

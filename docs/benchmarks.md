@@ -293,13 +293,13 @@ schoolbook even on `two_equal_cycles` at `n=2048`:
 | `four_equal_cycles` | `schoolbook_sequential` | about 4.4 s |
 | `four_equal_cycles` | `ntt_sequential` | timed out at 10 s, over 200 CRT prime convolutions |
 
-This led to two routing changes:
+At the time of this diagnostic, two routing changes followed:
 
 - `multiply_polynomials_fft` now estimates the number of CRT primes needed and
   falls back to schoolbook multiplication when that estimate is above its prime
   budget.
-- `count_extensions_from_cycle_type(..., method="auto")` uses Touchard when
-  the needed `M_s` values are already cached or few, but routes cold dense
+- `count_extensions_from_cycle_type(..., method="auto")` used Touchard when
+  the needed `M_s` values were already cached or few, and routed cold dense
   high-`n` cycle types to the rook-polynomial product.
 
 The issue was not just unbalanced polynomial lengths; the CRT reconstruction
@@ -313,3 +313,25 @@ After the CRT-prime guard, the same `mixed_ladder, n=2048` diagnostic routes
 | `schoolbook_sequential` | about 0.54 s |
 | `ntt_sequential` | about 0.53 s, 0 NTT steps |
 | `ntt_tree` | about 1.84 s, 0 NTT steps |
+
+## Width scaling for exact third-row counts
+
+From the repository root on macOS or Linux, run
+
+```console
+uv run --frozen python -m benchmarks.benchmark_wide_two_rows --output wide.json
+```
+
+Start with 1,024 columns and double the width. Each input has either two
+equal cycles, repeated 16-cycles, or a repeating mix of short cycles.
+For the explicit-row call, the fixture separately shuffles columns and
+symbols before timing. The call includes validation, cycle discovery and
+the exact extension count. A second series supplies the cycle lengths
+directly. Each answer must agree with an independent calculation.
+
+Read each series by its largest passing width, the time multiplier since the
+previous width, and peak process memory. A width passes when the median of
+three fresh-process calls is at most one second and the largest peak RSS is
+at most 256 MiB. The first miss ends that series. A worker has an eight-second
+wall-clock deadline including startup. Use `--repo /path/to/other/checkout`
+to compare another revision on the same machine with identical fixtures.
