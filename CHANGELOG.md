@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Speed up exact third-row counts for wide two-row rectangles. Callers can
+  supply the rows, their relative permutation, or its cycle lengths.
 - Count one- and two-row extensions of an `(n-2) x n` rectangle from cycles
   of allowed positions in quadratic time.
 - Add `latin-rectangles total -r ROWS -c COLUMNS` and the Python API

@@ -148,7 +148,7 @@ Implementation mapping:
 | `get_rook_polynomial_for_cycle(l)` | compute `R_l(x)` |
 | `multiply_polynomials(a, b)` | exact schoolbook product |
 | `multiply_polynomials_fft(a, b)` | exact NTT/CRT product for large dense inputs |
-| `count_extensions_from_derangement(pi)` | decompose `pi`, multiply cycle rook polynomials, apply inclusion-exclusion |
+| `count_extensions_from_cycle_type(lengths, method="rook")` | multiply cycle rook polynomials and apply inclusion-exclusion |
 
 ## 4. Touchard/Reversed Cycle Polynomial
 
@@ -365,6 +365,29 @@ latin_rectangles.extension_counting._count_extensions_from_cycle_type_touchard
 
 This path is especially useful when enumerating many cycle structures for the
 same `n`, because all one-cycle values `M_s` are cached.
+
+For wide two-row inputs the default counter generates the one-cycle values in
+increasing order. It uses the straight ménage numbers `A_s` to get the
+circular numbers `M_s`. The recurrence starts with `A_0 = 1, A_1 = A_2 = 0`.
+
+```text
+A_s = (s-1)(A_(s-1) + A_(s-2)) + A_(s-3)    (s >= 3)
+M_s = A_s - A_(s-1)                          (s >= 2)
+M_0 = 2, M_1 = -1
+```
+
+Complementary subsets have equal multiplicities, so each pair can be counted
+once. When the width is even, subsets with sum exactly half
+contribute their multiplicity once because `M_0 / 2 = 1`. For equal-length
+cycles the multiplicity of choosing exactly `j` out of `c` cycles is
+`binom(c, j)`. With explicit rows, validation, relabeling and walking the
+relative permutation recover all the cycle lengths in linear time before this
+sum is evaluated. [Ménage recurrences, equations (38)–(40)](https://doi.org/10.3390/e23111423).
+
+The default cycle-type API uses this calculation from 1,024 columns. A
+one-cycle query needs just `M_n`, and a pair of lengths `a, b` needs
+`M_(a+b) + M_|a-b|`. These queries share one-cycle values. The wide
+cycle-type cache holds eight entries and skips widths above 65,536.
 
 Performance note:
 

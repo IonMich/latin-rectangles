@@ -203,7 +203,8 @@ E=M_8+2M_4+M_0=4738+2\cdot2+2=4744.
 
 M₀ = 2 is a formal polynomial value, not the count for an empty rectangle.
 The implementation evaluates the sign-sum multiplicities with subset-sum
-counts and reuses cached M<sub>ℓ</sub> values. This is **Touchard’s 1934 counting identity**;
+counts. Wide inputs can evaluate the needed M<sub>ℓ</sub> values in sequence
+using the ménage recurrence. This is **Touchard’s 1934 counting identity**;
 [the derivation and attribution](docs/methods.md#5-derivation-of-touchards-formula)
 are documented. It is specific to the two-row structure; the general k-row
 method above uses component matching polynomials directly.
@@ -221,6 +222,11 @@ The cycle-type API offers `auto`, `touchard`, `rook` and `rook_ntt` methods for
 one added row. Counts use integers throughout. The optional transform path uses
 NTT/CRT reconstruction with schoolbook fallback; it is not floating-point FFT.
 The favorable method depends on structure, coefficient size and cache state.
+
+For a wide two-row rectangle, pass the two rows directly to
+`count_next_row_extensions(rows)`. The default path validates the rows,
+recovers the relative permutation's cycle lengths, and counts legal third
+rows. Supplying the cycle lengths directly skips that preprocessing.
 
 - [Methods, equations and method selection](docs/methods.md)
 - [Benchmark workloads and reproduction](docs/benchmarks.md)

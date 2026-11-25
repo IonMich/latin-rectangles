@@ -1,8 +1,12 @@
 """Tests for the 2-row Touchard cycle-structure formula."""
 
+from typing import Literal
+from unittest.mock import patch
+
 import pytest
 
 from latin_rectangles import count_extensions_from_derangement
+from latin_rectangles import extension_counting as counting
 from latin_rectangles.__main__ import generate_all_cycle_structures
 from latin_rectangles.derangements import create_cycle_structure
 from latin_rectangles.extension_counting import (
@@ -84,3 +88,22 @@ def test_old_signed_method_name_is_not_supported() -> None:
         count_extensions_from_cycle_type(  # type: ignore[arg-type]
             [2, 2], method="signed"
         )
+
+
+def test_wide_cycle_type_rejects_fractional_length() -> None:
+    with pytest.raises(TypeError):
+        count_extensions_from_cycle_type([1024.5])  # type: ignore[list-item]
+
+
+@pytest.mark.parametrize(("width", "warm_with"), [(4096, "auto"), (1024, "touchard")])
+def test_wide_sparse_types_reuse_the_same_one_cycle_value(
+    width: int, warm_with: Literal["auto", "touchard"]
+) -> None:
+    _one_cycle_extension_count.cache_clear()
+    single = count_extensions_from_cycle_type([width], method=warm_with)
+    with patch.object(
+        counting, "_count_streaming_touchard", side_effect=AssertionError
+    ):
+        assert count_extensions_from_cycle_type([width]) == single
+        # The equal pair uses M_width and the formal M_0 = 2.
+        assert count_extensions_from_cycle_type([width // 2] * 2) == single + 2

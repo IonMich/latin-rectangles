@@ -1,12 +1,14 @@
 """Main extension counting algorithm for Latin rectangles."""
 
 import math
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
+from functools import lru_cache
+from operator import index
 from typing import Literal
 
+from ._streaming_touchard import _count_streaming_touchard
 from .derangements import create_cycle_structure, find_cycle_decomposition
-from .general_extensions import count_extensions
 from .rook_polynomials import (
     get_rook_polynomial_for_cycle,
     multiply_polynomials,
@@ -15,6 +17,11 @@ from .rook_polynomials import (
 
 CycleStructureMethod = Literal["auto", "touchard", "rook", "rook_ntt"]
 _TOUCHARD_FOLDED_MAX_N = 64
+# Smaller known-cycle batches benefit from the existing shared one-cycle cache.
+_STREAMING_MIN_WIDTH = 1024
+# At this width n! is below 2^1048576, so each retained answer fits in
+# about 128 KiB. The corresponding tuple contains at most n/2 cycle lengths.
+_MAX_CACHED_WIDTH = 65_536
 
 
 @dataclass(frozen=True)
@@ -59,6 +66,7 @@ class _OneCycleExtensionCounter:
 
     def cache_clear(self) -> None:
         self._cache.clear()
+        _cached_wide_count.cache_clear()
         self._hits = 0
         self._misses = 0
 
@@ -72,6 +80,10 @@ class _OneCycleExtensionCounter:
 
     def missing_values(self, values: Iterable[int]) -> set[int]:
         return {value for value in values if value not in self._cache}
+
+    def cached_value(self, index: int) -> int | None:
+        """Look up an existing formal M_index without growing the cache."""
+        return self._cache.get(index)
 
 
 def _apply_inclusion_exclusion(rook_poly: list[int], n: int) -> int:
@@ -140,7 +152,7 @@ def _touchard_m_values(cycle_lengths: tuple[int, ...]) -> set[int]:
     }
 
 
-def _count_extensions_from_cycle_type_touchard(cycle_lengths: list[int]) -> int:
+def _count_extensions_from_cycle_type_touchard(cycle_lengths: Sequence[int]) -> int:
     """Count 2-row extensions from cycle lengths via Touchard's formula.
 
     The repo's rook polynomials store positive matching numbers r_j. The
@@ -190,7 +202,7 @@ def _count_extensions_from_cycle_type_touchard(cycle_lengths: list[int]) -> int:
 
 
 def _count_extensions_from_cycle_type_rook(
-    cycle_lengths: list[int], *, use_fft: bool = False
+    cycle_lengths: Sequence[int], *, use_fft: bool = False
 ) -> int:
     """Count 2-row extensions from cycle lengths via rook polynomial products."""
     lengths = tuple(cycle_lengths)
@@ -227,13 +239,43 @@ def _choose_cycle_structure_method(
     return "rook"
 
 
-def _count_extensions_from_cycle_type_auto(cycle_lengths: list[int]) -> int:
-    """Count cycle-structure extensions using the routed default method."""
-    lengths = tuple(cycle_lengths)
-    _validate_cycle_lengths(lengths)
+def _wide_count(lengths: tuple[int, ...]) -> int:
+    return _count_streaming_touchard(
+        lengths, cached_value=_one_cycle_extension_count.cached_value
+    )
+
+
+_cached_wide_count = lru_cache(maxsize=8)(_wide_count)
+
+
+def _known_wide_count(lengths: tuple[int, ...], n: int) -> int:
+    if n > _MAX_CACHED_WIDTH:
+        return _wide_count(lengths)
+    return _cached_wide_count(tuple(sorted(lengths)))
+
+
+def _wide_one_cycle(s: int) -> int:
+    if s < 2:
+        return (2, -1)[s]
+    value = _one_cycle_extension_count.cached_value(s)
+    if value is not None:
+        return value
+    return _known_wide_count((s,), s)
+
+
+def _count_extensions_from_cycle_type_auto(lengths: tuple[int, ...]) -> int:
+    """Count from validated cycle lengths using the routed default method."""
+    n = sum(lengths)
+    if n >= _STREAMING_MIN_WIDTH:
+        if len(lengths) == 1:
+            return _wide_one_cycle(n)
+        if len(lengths) == 2:
+            # Folding the four sign vectors gives M_(a+b) + M_|a-b|.
+            return _wide_one_cycle(n) + _wide_one_cycle(abs(lengths[0] - lengths[1]))
+        return _known_wide_count(lengths, n)
     if _choose_cycle_structure_method(lengths) == "touchard":
-        return _count_extensions_from_cycle_type_touchard(cycle_lengths)
-    return _count_extensions_from_cycle_type_rook(cycle_lengths, use_fft=False)
+        return _count_extensions_from_cycle_type_touchard(lengths)
+    return _count_extensions_from_cycle_type_rook(lengths, use_fft=False)
 
 
 def count_extensions_from_cycle_type(
@@ -244,7 +286,7 @@ def count_extensions_from_cycle_type(
 ) -> int:
     """Count ordered extensions from a normalized 2 x n start by cycle type."""
     _validate_rows_to_add(rows_to_add)
-    lengths = tuple(cycle_lengths)
+    lengths = tuple(map(index, cycle_lengths))
     _validate_cycle_lengths(lengths)
 
     if rows_to_add == 0:
@@ -253,19 +295,27 @@ def count_extensions_from_cycle_type(
         if method != "auto":
             raise ValueError("method is only supported when rows_to_add == 1")
         return count_extensions_from_derangement(
-            create_cycle_structure(cycle_lengths),
+            create_cycle_structure(list(lengths)),
             rows_to_add=rows_to_add,
         )
 
     if method == "auto":
-        return _count_extensions_from_cycle_type_auto(cycle_lengths)
+        return _count_extensions_from_cycle_type_auto(lengths)
     if method == "touchard":
-        return _count_extensions_from_cycle_type_touchard(cycle_lengths)
+        return _count_extensions_from_cycle_type_touchard(lengths)
     if method == "rook":
-        return _count_extensions_from_cycle_type_rook(cycle_lengths, use_fft=False)
+        return _count_extensions_from_cycle_type_rook(lengths, use_fft=False)
     if method == "rook_ntt":
-        return _count_extensions_from_cycle_type_rook(cycle_lengths, use_fft=True)
+        return _count_extensions_from_cycle_type_rook(lengths, use_fft=True)
     raise ValueError(f"Unknown cycle-structure method: {method}")
+
+
+def _count_next_from_valid_derangement(permutation: list[int], *, use_fft: bool) -> int:
+    """Count one extension after the normalized permutation has been validated."""
+    lengths = [len(cycle) for cycle in find_cycle_decomposition(permutation)]
+    if use_fft:
+        return _count_extensions_from_cycle_type_rook(lengths, use_fft=True)
+    return _count_streaming_touchard(tuple(lengths))
 
 
 def count_extensions_from_derangement(
@@ -293,27 +343,15 @@ def count_extensions_from_derangement(
     if rows_to_add == 0:
         return 1
     if rows_to_add > 1:
+        from .general_extensions import count_extensions
+
         return count_extensions(
             [_identity_row(n), permutation],
             rows_to_add=rows_to_add,
             use_fft=use_fft,
         )
 
-    # 1. Find the cycle decomposition of the permutation
-    cycles = find_cycle_decomposition(permutation)
-
-    # 2. Get the total rook polynomial by multiplying the polynomials of the sub-problems
-    total_rook_poly = [1]  # Start with the polynomial "1"
-    for cycle in cycles:
-        k = len(cycle)
-        cycle_rook_poly = get_rook_polynomial_for_cycle(k)
-        if use_fft:
-            total_rook_poly = multiply_polynomials_fft(total_rook_poly, cycle_rook_poly)
-        else:
-            total_rook_poly = multiply_polynomials(total_rook_poly, cycle_rook_poly)
-
-    # 3. Apply the Principle of Inclusion-Exclusion to get the final count.
-    return _apply_inclusion_exclusion(total_rook_poly, n)
+    return _count_next_from_valid_derangement(permutation, use_fft=use_fft)
 
 
 __all__ = ["count_extensions_from_cycle_type", "count_extensions_from_derangement"]
