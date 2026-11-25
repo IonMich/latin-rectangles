@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add `find_next_row(rows)` to return one legal extension in the original
+  labels, or `None` when a positive-width square is complete.
 - Speed up exact third-row counts for wide two-row rectangles. Callers can
   supply the rows, their relative permutation, or its cycle lengths.
 - Count one- and two-row extensions of an `(n-2) x n` rectangle from cycles

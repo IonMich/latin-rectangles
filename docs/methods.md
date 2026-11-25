@@ -467,6 +467,29 @@ With `c` cycles, the count is `2^c` for both one and two added rows. Finding the
 allowed pairs takes `O(n^2)` time on the explicit rectangle. Counting their
 components takes `O(n)` time, with `O(n)` auxiliary space overall.
 
+### Constructing one legal next row
+
+In a valid `k × n` rectangle, each column allows exactly `n-k` symbols and
+each symbol is available in exactly `n-k` columns. For `k < n`, this regular
+bipartite graph has a perfect matching. Assigning the matched symbol to each
+column gives a legal next row. [Latin rectangles and Hall’s theorem](https://www.math.utoronto.ca/gscott/MAT332notes_latinsquares.pdf).
+
+`find_next_row(rows)` uses this structure in two ways.
+
+- When `2k <= n`, start with a permutation and fix each conflict by swapping
+  with one of the first `2k` columns. At most `k` columns hold a symbol
+  forbidden at the conflict, and at most `k` columns forbid its current
+  symbol. Those sets overlap at the conflicting column, leaving at least one
+  usable swap partner among the `2k` choices. Both columns become legal. A
+  single pass takes `O(nk)` time and `O(n + k²)` auxiliary space.
+- When more than half the rows are filled, keep the allowed symbols for
+  each column. Match free symbols greedily, then find alternating paths from
+  any unmatched columns by breadth-first search and flip their assignments.
+  With degree `d = n-k`, the worst-case time is `O(nk + n²d)` and auxiliary
+  space is `O(n + nd)`.
+
+### Counting from the forbidden positions
+
 For each column `j`, the forbidden symbols are:
 
 ```text
