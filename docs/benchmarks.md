@@ -424,6 +424,13 @@ uv run --frozen python -m benchmarks.benchmark_find_next_row --output benchmark_
 uv run --frozen python -m benchmarks.benchmark_find_next_row --method legacy --repo /path/to/base --output benchmark_results/witness-base.json
 ```
 
+To reproduce the two-row width sweep shown in the README, select the
+`two_irregular` family and raise its ceiling to 1,048,576 columns.
+
+```console
+uv run --frozen python -m benchmarks.benchmark_find_next_row --families two_irregular --max-width 1048576 --output benchmark_results/witness-wide.json
+```
+
 The baseline calls `next(_iter_valid_next_rows(rows), None)`. Both methods
 receive the same independently seeded inputs. The four families cover two
 irregular rows, a half-filled rectangle, two rows remaining and one forced

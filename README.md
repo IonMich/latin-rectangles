@@ -1,7 +1,8 @@
 # Latin Rectangles
 
-Exact counts for extending a Latin rectangle: append rows that use every symbol
-once and never repeat a symbol in a column. The library combines specialized
+Find one row to append to a Latin rectangle, or count exactly how many rows
+fit. Each new row uses every symbol once and avoids the symbols already in
+each column. The library combines specialized
 **two-row methods based on permutation cycles and Touchard’s identity** with
 **general k-row counting on forbidden bipartite graphs**.
 
@@ -16,12 +17,37 @@ once and never repeat a symbol in a column. The library combines specialized
 completions → inclusion–exclusion. This paced preview plays once; static figures
 and equations keep the reasoning available below.*
 
-[How it works](#how-it-works) · [General k-row counting](#general-k-row-counting) · [API and methods](#api-and-methods)
+[Find one row](#find-one-legal-next-row) · [Performance](#performance) · [How it works](#how-it-works) · [General k-row counting](#general-k-row-counting) · [API and methods](#api-and-methods)
 
 ## Try it
 
-Requires Python 3.12+. Install in your project with `uv add latin-rectangles`, or
-run `uvx latin-rectangles --c "2,2,4"` to try the illustrated example directly.
+### Find one legal next row
+
+In a source checkout with Python 3.12+, start `uv run python` and paste this
+example. The leading `0` in each row is an indexing placeholder.
+
+```python
+from latin_rectangles import find_next_row
+
+rows = [
+    [0, 1, 2, 3, 4],
+    [0, 2, 1, 4, 3],
+    [0, 3, 4, 1, 2],
+]
+print(find_next_row(rows))  # [0, 4, 3, 2, 1]
+```
+
+Here each column is missing exactly one symbol. Every positive-width Latin
+rectangle with fewer rows than columns has a legal next row. When several
+rows fit, the function returns one of them using the original labels. A
+complete square of positive width returns `None`. At zero width the unique
+next row is `[0]`. The function leaves the input untouched and raises
+`ValueError` for an invalid rectangle.
+
+### Count legal extensions
+
+Install the counting library with `uv add latin-rectangles`, or run
+`uvx latin-rectangles --c "2,2,4"` to count from the illustrated cycle lengths.
 
 ```python
 from latin_rectangles import count_extensions, count_extensions_from_cycle_type
@@ -33,27 +59,6 @@ count_extensions_from_cycle_type([2, 2, 4])  # 4744 legal third rows
 rows = [[0, 1, 2, 3, 4], [0, 2, 1, 4, 3], [0, 3, 4, 1, 2]]
 count_extensions(rows)  # 1 legal fourth row
 ```
-
-### Find one legal next row
-
-From a source checkout, pass the existing rows to `find_next_row`. Each row
-starts with the library's indexing sentinel `0`.
-
-```python
-from latin_rectangles import find_next_row
-
-rows = [[0, 1, 2, 3, 4], [0, 2, 1, 4, 3], [0, 3, 4, 1, 2]]
-row = find_next_row(rows)         # [0, 4, 3, 2, 1]
-assert row is not None
-assert find_next_row([*rows, row]) is None  # The square is complete.
-```
-
-The returned row uses the original symbol labels. When several rows work, any
-one of them is a valid result. A positive-width Latin rectangle with fewer
-rows than columns always has an extension. Each column can be matched to a
-different symbol it has yet to use. The function leaves the input untouched
-and raises `ValueError` for an invalid rectangle. With zero columns, the
-unique next row is `[0]`, following the counting API's empty-row convention.
 
 ### Count all rectangles of a given size
 
@@ -73,6 +78,31 @@ Doyle inclusion-exclusion for larger heights. Cost grows steeply with the
 number of rows; this is intended for fixed, small heights. Use `total --help`
 for options, including `--full-output` for very large counts.
 [Algorithm and conventions](docs/methods.md#10-total-counts-by-dimensions)
+
+## Performance
+
+Both charts start with two explicit rows. Times are medians of three fresh
+Python 3.12.9 processes on an Apple M2, including input validation. The
+benchmarks check the returned row or exact count outside the timed call.
+
+**Finding one row.** Given two irregular rows with **1,048,576 columns**,
+`find_next_row(rows)` produced a legal third row in **585 ms** with **218 MiB**
+peak process memory. This was the largest width requested in this run.
+[Reproduce the row-construction benchmark](docs/benchmarks.md#time-to-produce-one-valid-next-row)
+
+![Time and peak process memory for finding one legal row from two irregular rows as the width grows to 1,048,576 columns.](docs/assets/benchmarks/find-one-row.svg)
+
+**Counting every legal third row.** `count_next_row_extensions(rows)` finds
+the cycle lengths in the supplied rows and computes the exact count. Within
+one second and 256 MiB, the widest measured inputs were **32,768 columns**
+for two equal cycles, **16,384** for cycles of length 16, and **8,192** for
+a mix of short cycles.
+[Reproduce the exact-count benchmark](docs/benchmarks.md#width-scaling-for-exact-third-row-counts)
+
+![Median time for exact counts from two supplied rows. At 16,384 columns, two equal cycles took 190 ms, length-16 cycles took 249 ms, and mixed short cycles took 1.55 seconds.](docs/assets/benchmarks/count-third-rows.svg)
+
+The [project scorecard](docs/benchmarks.md#project-scorecard-v1) also covers
+batch throughput, peak memory, ordered extensions, and labeled rectangle totals.
 
 ## How it works
 
