@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Count one- and two-row extensions of an `(n-2) x n` rectangle from cycles
+  of allowed positions in quadratic time.
 - Add `latin-rectangles total -r ROWS -c COLUMNS` and the Python API
   `count_latin_rectangles(rows, columns)` for exact labeled total counts.
   Use small-height recurrences and generalized Doyle inclusion-exclusion,

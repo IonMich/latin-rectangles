@@ -23,6 +23,7 @@ from latin_rectangles import (
     create_cycle_structure,
 )
 from latin_rectangles import extension_counting as counting
+from latin_rectangles import general_extensions as general
 from latin_rectangles import rook_polynomials as rook
 
 
@@ -147,6 +148,32 @@ def test_ordered_multiple_rows_against_full_candidate_tuples(
         count_extensions_from_cycle_type(lengths, rows_to_add=rows_to_add) == expected
     )
     assert count_extensions(one_indexed(rows), rows_to_add=rows_to_add) == expected
+
+
+@pytest.mark.parametrize(("missing_shift", "expected"), [(1, 2), (2, 4), (3, 8)])
+def test_two_remaining_rows_use_allowed_cycles(
+    missing_shift: int, expected: int
+) -> None:
+    # Omit two rows of a cyclic square. The allowed graph has one, two or
+    # three components, including parallel edges after contracting each column.
+    n = 6
+    rows = [
+        [(column + shift) % n for column in range(n)]
+        for shift in range(1, n)
+        if shift != missing_shift
+    ]
+    assert permanent_count(rows) == expected
+    indexed = one_indexed(rows)
+    with (
+        patch.object(
+            general, "_component_matching_polynomial", side_effect=AssertionError
+        ),
+        patch.object(general, "_iter_valid_next_rows", side_effect=AssertionError),
+    ):
+        for use_fft in (False, True):
+            assert count_next_row_extensions(indexed, use_fft=use_fft) == expected
+            assert count_extensions(indexed, use_fft=use_fft) == expected
+            assert count_extensions(indexed, rows_to_add=2, use_fft=use_fft) == expected
 
 
 def test_every_normalized_latin_square_prefix_of_order_four() -> None:
